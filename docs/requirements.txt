@@ -1,7 +1,4 @@
 Django==1.4.13
-sphinxcontrib-httpdomain
-sphinxcontrib-napoleon==0.3.2
-sphinx_rtd_theme
 -e git+https://github.com/pculture/unilangs.git#egg=unilangs
 -e git+https://github.com/pculture/babelsubs.git#egg=babelsubs
 celery==3.0.11

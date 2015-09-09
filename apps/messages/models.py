@@ -76,6 +76,23 @@ class MessageManager(models.Manager):
             messages_to_clean = messages_to_clean.filter(message_type=message_type)
         messages_to_clean.delete()
 
+    def convert_old_messages(self, messages):
+        notifications = []
+        regular = []
+        for message in messages:
+            if message.message_type == 'O' or message.message_type == '':
+                if message.author:
+                    regular.append(message.id)
+                    message.message_type="M"
+                else:
+                    notifications.append(message.id)
+                    message.message_type="S"
+        if regular:
+            Message.objects.filter(id__in=regular).update(message_type='M')
+        if notifications:
+            Message.objects.filter(id__in=notifications).update(message_type='S')
+        return messages
+
 class Message(models.Model):
     user = models.ForeignKey(User)
     subject = models.CharField(max_length=100, blank=True)

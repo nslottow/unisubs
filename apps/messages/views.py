@@ -84,7 +84,7 @@ def message(request, message_id):
                        paginate_by=MESSAGES_ON_PAGE,
                        template_name='messages/message.html',
                        template_object_name='message',
-                       extra_context=extra_context)
+                       extra_context=extra_context, filtering_function=Message.objects.convert_old_messages)
     try:
         last_message = messages[0]
         max_age = 60*60*24*365
@@ -130,7 +130,7 @@ def inbox(request, message_pk=None):
                        paginate_by=MESSAGES_ON_PAGE,
                        template_name='messages/inbox.html',
                        template_object_name='message',
-                       extra_context=extra_context)
+                       extra_context=extra_context, filtering_function=Message.objects.convert_old_messages)
     try:
         last_message = qs[:1].get()
         max_age = 60*60*24*365

@@ -29,7 +29,7 @@ from django.shortcuts import render
 
 def object_list(request, queryset, paginate_by=None, allow_empty=True,
                 template_name=None, extra_context=None,
-                template_object_name='object'):
+                template_object_name='object', filtering_function=None):
 
     paginator = Paginator(queryset, paginate_by,
                           allow_empty_first_page=allow_empty)
@@ -46,6 +46,9 @@ def object_list(request, queryset, paginate_by=None, allow_empty=True,
         page_obj = paginator.page(page_number)
     except InvalidPage:
         raise Http404
+
+    if filtering_function:
+        page_obj = filtering_function(page_obj)
 
     context = {
             '%s_list' % template_object_name: page_obj.object_list,

@@ -4059,16 +4059,16 @@
     }
 
     function monitorCurrentTime() {
-      var playerTime = player.getCurrentTime();
-      if ( !impl.seeking ) {
-        if ( ABS( impl.currentTime - playerTime ) > CURRENT_TIME_MONITOR_MS ) {
-          onSeeking();
-          onSeeked();
-        }
-        impl.currentTime = playerTime;
-      } else if ( ABS( playerTime - impl.currentTime ) < 1 ) {
-        onSeeked();
-      }
+	var playerTime = player.getCurrentTime();
+	if ( !impl.seeking ) {
+            if ( ABS( impl.currentTime - playerTime ) > CURRENT_TIME_MONITOR_MS ) {
+		onSeeking();
+		onSeeked();
+            }
+            impl.currentTime = playerTime;
+	} else if ( ABS( playerTime - impl.currentTime ) < 1 ) {
+            onSeeked();
+	}
     }
 
     function monitorBuffered() {
@@ -7093,7 +7093,10 @@
 		params: playerVars,
 		events: {
 		    'apiready': onPlayerReady,
-		    'error': onPlayerError
+		    'error': onPlayerError,
+		    'play': onPlay,
+		    'pause': onPause,
+		    'ended': onEnded
 		}
 	    });
 
@@ -7103,7 +7106,9 @@
 	}
 
 	function monitorCurrentTime() {
-	    var playerTime = player.currentTime;
+//	    console.log("monitorCurrentTime");
+	    var playerTime = player.currentTime * 1.0;
+	    console.log(playerTime);
 	    if ( !impl.seeking ) {
 		if (ABS( impl.currentTime - playerTime ) > CURRENT_TIME_MONITOR_MS ) {
 		    onSeeking();
@@ -7130,18 +7135,17 @@
 	    impl.currentTime = aTime;
 	    if( !mediaReady ) {
 		addMediaReadyCallback( function() {
-
 		    onSeeking();
 		    player.seek(aTime);
 		});
 		return;
 	    }
-
 	    onSeeking();
 	    player.seek(aTime);
 	}
 
 	function onTimeUpdate() {
+	    console.log("About to update time 1");
 	    self.dispatchEvent( "timeupdate" );
 	}
 
@@ -7153,6 +7157,7 @@
 	function onSeeked() {
 	    impl.ended = false;
 	    impl.seeking = false;
+	    console.log("About to update time 2");
 	    self.dispatchEvent( "timeupdate" );
 	    self.dispatchEvent( "seeked" );
 	    self.dispatchEvent( "canplay" );
@@ -7160,6 +7165,7 @@
 	}
 
 	function onPlay() {
+	    console.log("onplay");
 	    if( impl.ended ) {
 		changeCurrentTime( 0 );
 		impl.ended = false;
@@ -7223,6 +7229,7 @@
 	    } else {
 		impl.ended = true;
 		onPause();
+		console.log("About to update time 3");
 		self.dispatchEvent( "timeupdate" );
 		self.dispatchEvent( "ended" );
 	    }

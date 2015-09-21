@@ -3156,7 +3156,7 @@
         // We leave HTMLVideoElement and HTMLAudioElement wrappers out
         // of the mix, since we'll default to HTML5 video if nothing
         // else works.  Waiting on #1254 before we add YouTube to this.
-        wrappers = "NetflixVideoElement HTMLFlashFallbackVideoElement HTMLYouTubeVideoElement HTMLVimeoVideoElement HTMLSoundCloudAudioElement HTMLNullVideoElement".split(" ");
+        wrappers = "HTMLYouTubeVideoElement HTMLDailymotionVideoElement HTMLVimeoVideoElement HTMLSoundCloudAudioElement HTMLNullVideoElement".split(" ");
 
     if ( !node ) {
       Popcorn.error( "Specified target `" + target + "` was not found." );
@@ -6819,6 +6819,606 @@
   Popcorn.HTMLAudioElement._canPlaySrc = canPlaySrc;
 
 }( Popcorn, window.document ));
+(function( Popcorn, window, document ) {
+    var EMPTY_STRING = "";
+    var CURRENT_TIME_MONITOR_MS = 10;
+  // Example: http://www.dailymotion.com/video/x37e9ql_coupe-davis-...
+    var regexDailymotion = /^.*\/video\/(.{7})/
+
+    // Setup for Dailymotion API
+    var dmReady = false,
+	dmLoading = false,
+	dmCallbacks = [];
+    var ABS = Math.abs;
+
+    function onDailymotionIframeAPIReady() {
+	var callback;
+	if (DM && DM.init) {
+	    dmReady = true;
+	    while( dmCallbacks.length ) {
+		callback = dmCallbacks.shift();
+		callback();
+	    }
+	} else {
+	    setTimeout( onDailymotionIframeAPIReady, 250 );
+	}
+    }
+    
+    function isDailymotionReady() {
+	var script;
+	// If we area already waiting, do nothing.
+	if( !dmLoading ) {
+	    // If script is already there, check if it is loaded.
+	    if ( window.DM ) {
+		onDaiymotionIframeAPIReady();
+	    } else {
+		script = document.createElement( "script" );
+		script.addEventListener( "load", onDailymotionIframeAPIReady, false);
+		script.src = "https://api.dmcdn.net/all.js";
+		document.head.appendChild( script );
+	    }
+	    dmLoading = true;
+	}
+	return dmReady;
+    }
+    
+    function addDailymotionCallback( callback ) {
+	dmCallbacks.push( callback );
+    }
+
+    function HTMLDailymotionVideoElement(id) {
+	// Dailymotion iframe API requires postMessage
+	if( !window.postMessage ) {
+	    throw "ERROR: HTMLDailymotionVideoElement requires window.postMessage";
+	}
+	
+	var self = new Popcorn._MediaElementProto(),
+	    parent = typeof id === "string" ? document.querySelector( id ) : id,
+	    elem = document.createElement( "div" );
+	var playerReady = false,
+	    mediaReady = false,
+	    loopedPlay = false,
+	    player,
+	    playerPaused = true,
+	    mediaReadyCallbacks = [],
+	    playerState = -1,
+	    bufferedInterval,
+	    lastLoadedFraction = 0,
+	    currentTimeInterval,
+	    timeUpdateInterval;
+
+	impl = {
+	    autoplay: EMPTY_STRING,
+	    currentTime: 0,
+	    chromeless: 0,
+	    duration: NaN,
+	    ended: false,
+	    error: null,
+	    loop: false,
+	    muted: false,
+            networkState: self.NETWORK_EMPTY,
+            readyState: self.HAVE_NOTHING,
+	    paused: true,
+	    seeking: false
+	};
+	// Namespace all events we'll produce
+	self._eventNamespace = Popcorn.guid( "HTMLDailymotionVideoElement::" );
+
+	self.parentNode = parent;
+	// Mark this as Dailymotion
+	self._util.type = "Dailymotion";
+
+      
+	function addMediaReadyCallback(callback) {
+	    mediaReadyCallbacks.push(callback);
+	}
+
+	function onPlayerReady( event ) {
+	    playerReady = true;
+	    onReady();
+	}
+
+
+	function onPlayerError(event) {
+	    var err = { name: "MediaError" };
+	    switch(event.data) {
+            default:
+		err.message = "Unknown error.";
+		err.code = 5;
+	    }
+	    impl.error = err;
+	    self.dispatchEvent( "error" );
+	}
+
+
+	function onReady() {
+	    addDailymotionEvent( "play", onPlay );
+	    addDailymotionEvent( "pause", onPause );
+	    // Set initial paused state
+	    if( impl.autoplay || !impl.paused ) {
+		removeDailymotionEvent( "play", onReady );
+		impl.paused = false;
+		addMediaReadyCallback(function() {
+		    if ( !impl.paused ) {
+			onPlay();
+		    }
+		});
+	    }
+
+	    // Ensure video will now be unmuted when playing due to the mute on initial load.
+	    if( !impl.muted ) {
+		player.setMuted(0);
+	    }
+	    impl.readyState = self.HAVE_METADATA;
+	    self.dispatchEvent("loadedmetadata");
+	    currentTimeInterval = setInterval(monitorCurrentTime,
+                                               CURRENT_TIME_MONITOR_MS);
+	    self.dispatchEvent( "loadeddata" );
+
+	    impl.readyState = self.HAVE_FUTURE_DATA;
+	    self.dispatchEvent( "canplay" );
+
+	    mediaReady = true;
+	    bufferedInterval = setInterval( monitorBuffered, 50 );
+
+	    while( mediaReadyCallbacks.length ) {
+		mediaReadyCallbacks[ 0 ]();
+		mediaReadyCallbacks.shift();
+	    }
+
+	    // We can't easily determine canplaythrough, but will send anyway.
+	    impl.readyState = self.HAVE_ENOUGH_DATA;
+	    self.dispatchEvent( "canplaythrough" );
+	}
+	
+	function addDailymotionEvent( event, listener ) {
+	    self.addEventListener( "" + event, listener, false );
+	}
+	function removeDailymotionEvent( event, listener ) {
+	    self.removeEventListener( "" + event, listener, false );
+	}
+	function dispatchDailymotionEvent( event ) {
+	    self.dispatchEvent( "" + event );
+	}
+	
+	function onBuffering() {
+	    impl.networkState = self.NETWORK_LOADING;
+	    var newDuration = player.duration;
+	    if (impl.duration !== newDuration) {
+		impl.duration = newDuration;
+		self.dispatchEvent( "durationchange" );
+	    }
+	    self.dispatchEvent( "waiting" );
+	}
+
+	addDailymotionEvent( "buffering", onBuffering );
+	addDailymotionEvent( "ended", onEnded );
+
+	function onPlayerStateChange(event) {
+	}
+
+	function destroyPlayer() {
+	    if( !( playerReady && player ) ) {
+		return;
+	    }
+
+	    removeDailymotionEvent( "buffering", onBuffering );
+	    removeDailymotionEvent( "ended", onEnded );
+	    removeDailymotionEvent( "play", onPlay );
+	    removeDailymotionEvent( "pause", onPause );
+	    onPause();
+	    mediaReady = false;
+	    loopedPlay = false;
+	    impl.currentTime = 0;
+	    mediaReadyCallbacks = [];
+	    clearInterval(currentTimeInterval);
+	    clearInterval(bufferedInterval);
+	    player.pause();
+	    elem = document.createElement( "div" );
+	}
+
+	function changeSrc( aSrc ) {
+	    if( !self._canPlaySrc( aSrc ) ) {
+		impl.error = {
+		    name: "MediaError",
+		    message: "Media Source Not Supported",
+		    code: MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+		};
+		self.dispatchEvent( "error" );
+		return;
+	    }
+
+	    impl.src = aSrc;
+
+	    // Make sure YouTube is ready, and if not, register a callback
+	    if( !isDailymotionReady() ) {
+		addDailymotionCallback( function() { changeSrc(aSrc); } );
+		return;
+	    }
+
+	    if( playerReady ) {
+		if( mediaReady ) {
+		    destroyPlayer();
+		} else {
+		    addMediaReadyCallback( function() {
+			changeSrc( aSrc );
+		    });
+		    return;
+		}
+	    }
+	    parent.appendChild( elem );
+
+	    // Use any player vars passed on the URL
+	    var playerVars = self._util.parseUri( aSrc ).queryKey;
+
+	    // Remove the video id, since we don't want to pass it
+	    delete playerVars.v;
+
+	    // Sync autoplay, but manage internally
+	    impl.autoplay = playerVars.autoplay === "1" || impl.autoplay;
+	    delete playerVars.autoplay;
+
+	    // Don't show related videos when ending
+	    playerVars.related = playerVars.related || 0;
+
+	    // Daylimotion's logo
+	    playerVars.logo = playerVars.logo || 1;
+
+	    // Don't show video info before playing
+	    playerVars.info = playerVars.info || 0;
+
+	    // Specify our domain as origin for iframe security
+	    var domain = window.location.protocol === "file:" ? "*" :
+		window.location.protocol + "//" + window.location.host;
+	    playerVars.origin = playerVars.origin || domain;
+
+	    playerVars.chromeless = playerVars.chromeless || 0;
+	    impl.chromeless = playerVars.chromeless;
+
+	    // Set wmode to transparent to show video overlays
+	    playerVars.wmode = playerVars.wmode || "opaque";
+
+	    if ( playerVars.html !== 0 ) {
+		playerVars.html = 1;
+	    }
+
+	    // Get video ID out of dailymotion url
+	    aSrc = regexDailymotion.exec(aSrc)[1];
+
+	    player = DM.player(elem, {
+		video: aSrc,
+		width: "100%",
+		height: "100%",
+		videoId: aSrc,
+		params: playerVars,
+		events: {
+		    'apiready': onPlayerReady,
+		    'error': onPlayerError
+		}
+	    });
+
+	    impl.networkState = self.NETWORK_LOADING;
+	    self.dispatchEvent( "loadstart" );
+	    self.dispatchEvent( "progress" );
+	}
+
+	function monitorCurrentTime() {
+	    var playerTime = player.currentTime;
+	    if ( !impl.seeking ) {
+		if (ABS( impl.currentTime - playerTime ) > CURRENT_TIME_MONITOR_MS ) {
+		    onSeeking();
+		    onSeeked();
+		}
+		impl.currentTime = playerTime;
+	    } else if ( ABS( playerTime - impl.currentTime ) < 1 ) {
+		onSeeked();
+	    }
+	}
+
+	function monitorBuffered() {
+	    var fraction = player.bufferedTime;
+	    if ( fraction && lastLoadedFraction !== fraction ) {
+		lastLoadedFraction = fraction;
+		onProgress();
+	    }
+	}
+
+	function changeCurrentTime( aTime ) {
+	    if ( aTime === impl.currentTime ) {
+		return;
+	    }
+	    impl.currentTime = aTime;
+	    if( !mediaReady ) {
+		addMediaReadyCallback( function() {
+
+		    onSeeking();
+		    player.seek(aTime);
+		});
+		return;
+	    }
+
+	    onSeeking();
+	    player.seek(aTime);
+	}
+
+	function onTimeUpdate() {
+	    self.dispatchEvent( "timeupdate" );
+	}
+
+	function onSeeking() {
+	    impl.seeking = true;
+	    self.dispatchEvent( "seeking" );
+	}
+
+	function onSeeked() {
+	    impl.ended = false;
+	    impl.seeking = false;
+	    self.dispatchEvent( "timeupdate" );
+	    self.dispatchEvent( "seeked" );
+	    self.dispatchEvent( "canplay" );
+	    self.dispatchEvent( "canplaythrough" );
+	}
+
+	function onPlay() {
+	    if( impl.ended ) {
+		changeCurrentTime( 0 );
+		impl.ended = false;
+	    }
+	    timeUpdateInterval = setInterval( onTimeUpdate,
+                                              self._util.TIMEUPDATE_MS );
+	    impl.paused = false;
+	    if( playerPaused ) {
+		playerPaused = false;
+		
+		if ( ( impl.loop && !loopedPlay ) || !impl.loop ) {
+		    loopedPlay = true;
+		    self.dispatchEvent( "play" );
+		}
+		self.dispatchEvent( "playing" );
+	    }
+	}
+	
+	function onProgress() {
+	    self.dispatchEvent( "progress" );
+	}
+
+
+
+	self.play = function() {
+	    impl.paused = false;
+	    if( !mediaReady ) {
+		addMediaReadyCallback( function() {
+		    self.play();
+		});
+		return;
+	    }
+	    player.play();
+	};
+
+	function onPause() {
+	    impl.paused = true;
+	    if ( !playerPaused ) {
+		playerPaused = true;
+		clearInterval( timeUpdateInterval );
+		self.dispatchEvent( "pause" );
+	    }
+	}
+
+	self.pause = function() {
+	    impl.paused = true;
+	    if( !mediaReady ) {
+		addMediaReadyCallback( function() {
+		    self.pause();
+		});
+		return;
+	    }
+	    player.pause();
+	};
+
+
+	function onEnded() {
+	    if(impl.loop) {
+		changeCurrentTime( 0 );
+		self.play();
+	    } else {
+		impl.ended = true;
+		onPause();
+		self.dispatchEvent( "timeupdate" );
+		self.dispatchEvent( "ended" );
+	    }
+	}
+
+	function setMuted( aValue ) {
+	    impl.muted = aValue;
+	    if( !mediaReady ) {
+		addMediaReadyCallback( function() {
+		    setMuted( impl.muted );
+		});
+		return;
+	    }
+	    player.setMuted(aValue);
+	    self.dispatchEvent( "volumechange" );
+	}
+
+	function getMuted() {
+	    return impl.muted;
+	}
+
+	Object.defineProperties( self, {
+	    src: {
+		get: function() {
+		    return impl.src;
+		},
+		set: function( aSrc ) {
+		    if( aSrc && aSrc !== impl.src ) {
+			changeSrc(aSrc);
+		    }
+		}
+	    },
+
+	    autoplay: {
+		get: function() {
+		    return impl.autoplay;
+		},
+		set: function( aValue ) {
+		    impl.autoplay = self._util.isAttributeSet( aValue );
+		}
+	    },
+
+	    loop: {
+		get: function() {
+		    return impl.loop;
+		},
+		set: function( aValue ) {
+		    impl.loop = self._util.isAttributeSet( aValue );
+		}
+	    },
+	    
+	    width: {
+		get: function() {
+		    return self.parentNode.offsetWidth;
+		}
+	    },
+
+	    height: {
+		get: function() {
+		    return self.parentNode.offsetHeight;
+		}
+	    },
+	    
+	    currentTime: {
+		get: function() {
+		    return impl.currentTime;
+		},
+		set: function( aValue ) {
+		    changeCurrentTime( aValue );
+		}
+	    },
+
+	    duration: {
+		get: function() {
+		    return impl.duration;
+		}
+	    },
+	    
+	    ended: {
+		get: function() {
+		    return impl.ended;
+		}
+	    },
+
+	    paused: {
+		get: function() {
+		    return impl.paused;
+		}
+	    },
+	    
+	    seeking: {
+		get: function() {
+		    return impl.seeking;
+		}
+	    },
+
+	    readyState: {
+		get: function() {
+		    return impl.readyState;
+		}
+	    },
+
+	    networkState: {
+		get: function() {
+		    return impl.networkState;
+		}
+	    },
+
+	    volume: {
+		get: function() {
+		    return impl.volume;
+		},
+		set: function( aValue ) {
+		    if( aValue < 0 || aValue > 1 ) {
+			throw "Volume value must be between 0.0 and 1.0";
+		    }
+		    impl.volume = aValue;
+		    if( !mediaReady ) {
+			addMediaReadyCallback( function() {
+			    self.volume = aValue;
+			});
+			return;
+		    }
+		    player.setVolume( impl.volume * 100 );
+		    self.dispatchEvent( "volumechange" );
+		}
+	    },
+
+	    muted: {
+		get: function() {
+		    return getMuted();
+		},
+		set: function( aValue ) {
+		    setMuted( self._util.isAttributeSet( aValue ) );
+		}
+	    },
+	    
+	    error: {
+		get: function() {
+		    return impl.error;
+		}
+	    },
+	    
+	    buffered: {
+		get: function () {
+		    var timeRanges = {
+			start: function( index ) {
+			    if ( index === 0 ) {
+				return 0;
+			    }
+
+			    //throw fake DOMException/INDEX_SIZE_ERR
+			    throw "INDEX_SIZE_ERR: DOM Exception 1";
+			},
+			end: function( index ) {
+			    if ( index === 0 ) {
+				if ( !impl.duration ) {
+				    return 0;
+				}
+				
+				return impl.duration * lastLoadedFraction;
+			    }
+			    
+			    //throw fake DOMException/INDEX_SIZE_ERR
+			    throw "INDEX_SIZE_ERR: DOM Exception 1";
+			},
+			length: 1
+		    };
+		    
+		    return timeRanges;
+		},
+		configurable: true
+	    }
+	});
+
+	self._canPlaySrc = Popcorn.HTMLDailymotionVideoElement._canPlaySrc;
+	self.canPlayType = Popcorn.HTMLDailymotionVideoElement.canPlayType;
+
+	return self;
+    }
+    Popcorn.HTMLDailymotionVideoElement = function( id ) {
+	return new HTMLDailymotionVideoElement( id );
+    };
+    
+    // Helper for identifying URLs we know how to play.
+    Popcorn.HTMLDailymotionVideoElement._canPlaySrc = function( url ) {
+	return (/^https?:\/\/(www\.)?dailymotion.com\/.*video\/.*/).test( url ) ?
+            "probably" :
+            EMPTY_STRING;
+    };
+
+    Popcorn.HTMLDailymotionVideoElement.canPlayType = function( type ) {
+	return EMPTY_STRING;
+    };
+
+}( Popcorn, window, document ));
 // PLUGIN: mediaspawner
 /**
   * mediaspawner Popcorn Plugin.

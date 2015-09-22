@@ -6890,7 +6890,7 @@
 	impl = {
 	    autoplay: EMPTY_STRING,
 	    currentTime: 0,
-	    chromeless: 0,
+	    chromeless: 1,
 	    duration: NaN,
 	    ended: false,
 	    error: null,
@@ -6930,6 +6930,13 @@
 	    self.dispatchEvent( "error" );
 	}
 
+	function onDurationChanged() {
+	    var newDuration = player.duration;
+	    if (impl.duration !== newDuration) {
+		impl.duration = newDuration;
+		self.dispatchEvent( "durationchange" );
+	    }
+	}
 
 	function onReady() {
 	    addDailymotionEvent( "play", onPlay );
@@ -6951,8 +6958,8 @@
 	    }
 	    impl.readyState = self.HAVE_METADATA;
 	    self.dispatchEvent("loadedmetadata");
-	    currentTimeInterval = setInterval(monitorCurrentTime,
-                                               CURRENT_TIME_MONITOR_MS);
+	    //currentTimeInterval = setInterval(monitorCurrentTime,
+              //                                 CURRENT_TIME_MONITOR_MS);
 	    self.dispatchEvent( "loadeddata" );
 
 	    impl.readyState = self.HAVE_FUTURE_DATA;
@@ -6980,19 +6987,6 @@
 	function dispatchDailymotionEvent( event ) {
 	    self.dispatchEvent( "" + event );
 	}
-	
-	function onBuffering() {
-	    impl.networkState = self.NETWORK_LOADING;
-	    var newDuration = player.duration;
-	    if (impl.duration !== newDuration) {
-		impl.duration = newDuration;
-		self.dispatchEvent( "durationchange" );
-	    }
-	    self.dispatchEvent( "waiting" );
-	}
-
-	addDailymotionEvent( "buffering", onBuffering );
-	addDailymotionEvent( "ended", onEnded );
 
 	function onPlayerStateChange(event) {
 	}
@@ -7062,7 +7056,7 @@
 	    playerVars.related = playerVars.related || 0;
 
 	    // Daylimotion's logo
-	    playerVars.logo = playerVars.logo || 1;
+	    playerVars.logo = playerVars.logo || 0;
 
 	    // Don't show video info before playing
 	    playerVars.info = playerVars.info || 0;
@@ -7072,7 +7066,7 @@
 		window.location.protocol + "//" + window.location.host;
 	    playerVars.origin = playerVars.origin || domain;
 
-	    playerVars.chromeless = playerVars.chromeless || 0;
+	    playerVars.chromeless = playerVars.chromeless || 1;
 	    impl.chromeless = playerVars.chromeless;
 
 	    // Set wmode to transparent to show video overlays
@@ -7096,19 +7090,18 @@
 		    'error': onPlayerError,
 		    'play': onPlay,
 		    'pause': onPause,
-		    'ended': onEnded
+		    'ended': onEnded,
+		    'durationchange': onDurationChanged,
+		    'timeupdate': onTimeUpdate
 		}
 	    });
-
 	    impl.networkState = self.NETWORK_LOADING;
 	    self.dispatchEvent( "loadstart" );
 	    self.dispatchEvent( "progress" );
 	}
 
 	function monitorCurrentTime() {
-//	    console.log("monitorCurrentTime");
 	    var playerTime = player.currentTime * 1.0;
-	    console.log(playerTime);
 	    if ( !impl.seeking ) {
 		if (ABS( impl.currentTime - playerTime ) > CURRENT_TIME_MONITOR_MS ) {
 		    onSeeking();
@@ -7145,7 +7138,7 @@
 	}
 
 	function onTimeUpdate() {
-	    console.log("About to update time 1");
+	    monitorCurrentTime();
 	    self.dispatchEvent( "timeupdate" );
 	}
 
@@ -7157,7 +7150,6 @@
 	function onSeeked() {
 	    impl.ended = false;
 	    impl.seeking = false;
-	    console.log("About to update time 2");
 	    self.dispatchEvent( "timeupdate" );
 	    self.dispatchEvent( "seeked" );
 	    self.dispatchEvent( "canplay" );
@@ -7165,13 +7157,10 @@
 	}
 
 	function onPlay() {
-	    console.log("onplay");
 	    if( impl.ended ) {
 		changeCurrentTime( 0 );
 		impl.ended = false;
 	    }
-	    timeUpdateInterval = setInterval( onTimeUpdate,
-                                              self._util.TIMEUPDATE_MS );
 	    impl.paused = false;
 	    if( playerPaused ) {
 		playerPaused = false;
@@ -7205,7 +7194,6 @@
 	    impl.paused = true;
 	    if ( !playerPaused ) {
 		playerPaused = true;
-		clearInterval( timeUpdateInterval );
 		self.dispatchEvent( "pause" );
 	    }
 	}
@@ -7229,7 +7217,6 @@
 	    } else {
 		impl.ended = true;
 		onPause();
-		console.log("About to update time 3");
 		self.dispatchEvent( "timeupdate" );
 		self.dispatchEvent( "ended" );
 	    }

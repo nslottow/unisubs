@@ -6822,8 +6822,8 @@
 (function( Popcorn, window, document ) {
     var EMPTY_STRING = "";
     var CURRENT_TIME_MONITOR_MS = 10;
-  // Example: http://www.dailymotion.com/video/x37e9ql_coupe-davis-...
-    var regexDailymotion = /^.*\/video\/(.{7})/
+    // Example: http://www.dailymotion.com/video/x37e9ql_coupe-davis-...
+    var regexDailymotion = /^.*\/video\/([^_]{6,7})/
 
     // Setup for Dailymotion API
     var dmReady = false,
@@ -7078,7 +7078,6 @@
 
 	    // Get video ID out of dailymotion url
 	    aSrc = regexDailymotion.exec(aSrc)[1];
-
 	    player = DM.player(elem, {
 		video: aSrc,
 		width: "100%",

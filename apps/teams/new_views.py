@@ -55,6 +55,7 @@ from subtitles.models import SubtitleLanguage
 from teams.workflows import TeamWorkflow
 from utils.breadcrumbs import BreadCrumb
 from utils.pagination import AmaraPaginator
+from utils.forms import autocomplete_user_view
 from utils.text import fmt
 from utils.translation import get_language_choices, get_language_label
 from videos.models import Action, Video
@@ -130,15 +131,17 @@ def fetch_actions_for_activity_page(team, tab, page, params):
     if params.get('action_type', 'any') != 'any':
         action_qs = action_qs.filter(action_type=params.get('action_type'))
 
-    action_qs = action_qs.select_related('new_language', 'video')
-
     sort = params.get('sort', '-created')
-    action_qs = action_qs.order_by(sort)
+    action_qs = action_qs.order_by(sort)[start:end]
 
-    action_qs = action_qs[start:end].select_related(
-        'user', 'new_language__video'
-    )
-    return list(action_qs)
+    # This query often requires a filesort in mysql.  We can speed things up
+    # by only selecting the ids, which keeps the rows being sorted small.
+    action_ids = list(action_qs.values_list('id', flat=True))
+    # Now do a second query that selects all the columns.
+    return list(Action.objects
+                .filter(id__in=action_ids)
+                .select_related('new_language', 'video', 'user',
+                                'new_language__video'))
 
 @team_view
 def videos(request, team):
@@ -329,6 +332,7 @@ def all_languages_page(request, team):
          completed_language_counts.get(lc, 0),
         )
         for lc in all_languages
+        if lc != ''
     ]
     languages.sort(key=lambda row: (-row[2], row[1]))
 
@@ -435,41 +439,19 @@ def invite(request, team):
     })
 
 @team_view
-def invite_user_search(request, team):
-    query = request.GET.get('query')
-    if query:
-        users = (User.objects
-                 .filter(username__icontains=query, is_active=True)
-                 .exclude(id__in=team.members.values_list('user_id'))
-                 .exclude(id__in=Invite.objects.pending_for(team).values_list('user_id')))
-    else:
-        users = User.objects.none()
-
-    data = [
-        {
-            'value': user.username,
-            'label': fmt(_('%(username)s (%(full_name)s)'),
-                         username=user.username,
-                         full_name=unicode(user)),
-        }
-        for user in users
-    ]
-
-    return HttpResponse(json.dumps(data), mimetype='application/json')
+def autocomplete_invite_user(request, team):
+    return autocomplete_user_view(request, team.invitable_users())
 
 @team_view
-def add_project_manager_search(request, team, project_slug):
-    return member_search(
-        request, team,
-        team.members.exclude(projects_managed__slug=project_slug)
-    )
+def autocomplete_project_manager(request, team, project_slug):
+    project = get_object_or_404(team.project_set, slug=project_slug)
+    return autocomplete_user_view(request, project.potential_managers())
 
 @team_view
-def add_language_manager_search(request, team, language_code):
-    return member_search(
-        request, team,
-        team.members.exclude(languages_managed__code=language_code)
-    )
+def autocomplete_language_manager(request, team, language_code):
+    return autocomplete_user_view(
+        request,
+        team.potential_language_managers(language_code))
 
 def member_search(request, team, qs):
     query = request.GET.get('query')
@@ -730,6 +712,65 @@ def settings_messages(request, team):
             BreadCrumb(team, 'teams:dashboard', team.slug),
             BreadCrumb(_('Settings'), 'teams:settings_basic', team.slug),
             BreadCrumb(_('Messages')),
+        ],
+    })
+
+@team_settings_view
+def settings_lang_messages(request, team):
+    if team.is_old_style():
+        return old_views.settings_lang_messages(request, team)
+
+    initial = team.settings.all_messages()
+    languages = [{"code": l.language_code, "data": l.data} for l in team.settings.localized_messages()]
+    if request.POST:
+        form = forms.GuidelinesLangMessagesForm(request.POST, languages=languages)
+        if form.is_valid():
+            new_language = None
+            new_message = None
+            for key, val in form.cleaned_data.items():
+                if key == "messages_joins_localized":
+                    new_message = val
+                elif key == "messages_joins_language":
+                    new_language = val
+                else:
+                    l = key.split("messages_joins_localized_")
+                    if len(l) == 2:
+                        code = l[1]
+                        try:
+                            setting = Setting.objects.get(team=team, key=Setting.KEY_IDS["messages_joins_localized"], language_code=code)
+                            if val == "":
+                                setting.delete()
+                            else:
+                                setting.data = val
+                                setting.save()
+                        except:
+                            messages.error(request, _(u'No message for that language.'))
+                            return HttpResponseRedirect(request.path)
+            if new_message and new_language:
+                setting, c = Setting.objects.get_or_create(team=team,
+                                  key=Setting.KEY_IDS["messages_joins_localized"],
+                                  language_code=new_language)
+                if c:
+                    setting.data = new_message
+                    setting.save()
+                else:
+                    messages.error(request, _(u'There is already a message for that language.'))
+                    return HttpResponseRedirect(request.path)
+            elif new_message or new_language:
+                messages.error(request, _(u'Please set the language and the message.'))
+                return HttpResponseRedirect(request.path)
+            messages.success(request, _(u'Guidelines and messages updated.'))
+            return HttpResponseRedirect(request.path)
+    else:
+        form = forms.GuidelinesLangMessagesForm(languages=languages)
+
+    return render(request, "new-teams/settings-lang-messages.html", {
+        'team': team,
+        'form': form,
+        'breadcrumbs': [
+            BreadCrumb(team, 'teams:dashboard', team.slug),
+            BreadCrumb(_('Settings'), 'teams:settings_basic', team.slug),
+            BreadCrumb(_('Language-specific Messages')),
         ],
     })
 

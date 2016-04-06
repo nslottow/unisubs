@@ -14,11 +14,13 @@ The subtitles passed review and have been submitted for approval.
 The subtitles passed review and have been published!
 {% endif %}
 </p>
-{% if note %}
+{% if notes %}
 {{ reviewer}} included the following note:
+{% for note in notes %}
 <p>
 {{ note }}
 </p>
+{% endfor %}
 {% endif %}
 
 

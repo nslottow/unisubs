@@ -4,7 +4,10 @@ Hi {{ user }},
 
 The subtitles have been returned to you for additional work and/or corrections.
 
-{% if note %} {{ reviewer}} included the following note:
-{{ note }} {% endif %}
+{% if notes %} {{ reviewer}} included the following note:
+{% for note in notes %}
+{{ note }}
+{% endfor %}
+{% endif %}
 
 Send {{reviewer}} a message: {{reviewer_message_url}}

@@ -5,8 +5,10 @@ Hi {{ user }},
 {% else %}
 Your {{ task_language }} subtitles for the video “{{ title }}” were not accepted by {{ reviewer }} from the {{ team.name }} team.
 {% endif %}
-{% if note %} {{ reviewer}} included the following note:
+{% if notes %} {{ reviewer}} included the following note:
+{% for note in notes %}
 {{ note }}
+{% endfor %}
 {% endif %}
 
 {% if sent_back %}

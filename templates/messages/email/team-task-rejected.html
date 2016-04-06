@@ -9,11 +9,13 @@ Your {{ task_language }} subtitles for the video “{{ title }}” were not acce
 
 {% endif %}
 </p>
-{% if note %}
+{% if notes %}
 {{ reviewer}} included the following note:
+{% for note in notes %}
 <p>
 {{ note }}
 </p>
+{% endfor %}
 {% endif %}
 
 {% if sent_back %}

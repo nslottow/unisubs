@@ -6,13 +6,15 @@ Hi {{ user }},
 </p>
 	The subtitles have been returned to you for additional work and/or corrections.
 </p>
-{% if note %}
+{% if notes %}
 	<p>
 		{{ reviewer}} included the following note:
 	</p>
+	{% for note in notes %}
 	<p>
 		{{ note }}
 	</p>
+	{% endfor %}
 {% endif %}
 
 <a href="{{reviewer_message_url}}">Send {{ reviewer }} a message</a> 

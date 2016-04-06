@@ -2,8 +2,11 @@ Hi {{ user }},
 
 Your {{ task_language }} subtitles for the video “{{ title }}” have been approved by {{ reviewer }} from the {{ team.name }} team and they are now published!
 
-{% if note %} {{ reviewer}} included the following note:
-{{ note }} {% endif %}
+{% if notes %} {{ reviewer}} included the following note:
+{% for note in notes %}
+{{ note }}
+{% endfor %}
+{% endif %}
 
 Send {{reviewer}} a {{reviewer_message_url}}
 or view your subtitles {{subs_url}}

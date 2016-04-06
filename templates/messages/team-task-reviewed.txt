@@ -6,8 +6,10 @@ Your {{ task_language }} subtitles for the video “{{ title }}” have been rev
 The subtitles passed review and have been submitted for approval. {% endif %}
 {% if reviewed_and_published %} The subtitles passed review and have been published! {% endif %}
 
-{% if note %} {{ reviewer}} included the following note:
+{% if notes %} {{ reviewer}} included the following note:
+{% for note in notes %}
 {{ note }}
+{% endfor %}
 {% endif %}
 Send {{reviewer}} a message: {{reviewer_message_url}}
 {% if approval_pending %} or view your subtitles: {{subs_url}}{%endif%}

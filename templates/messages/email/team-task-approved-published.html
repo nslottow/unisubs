@@ -4,11 +4,13 @@ Hi {{ user }},
 by {{ reviewer }} from the {{ team.name }} team and they are now published!</p>
 <p>
 </p>
-{% if note %}
+{% if notes %}
 {{ reviewer}} included the following note:
+{% for note in notes %}
 <p>
 {{ note }}
 </p>
+{% endfor %}
 {% endif %}
 
 

@@ -113,6 +113,7 @@ def team_invitation_sent(invite_pk):
     invite = Invite.objects.get(pk=invite_pk)
     if not team_sends_notification(invite.team,'block_invitation_sent_message') or not invite.user.is_active:
         return False
+
     # does this team have a custom message for this?
     team_default_message = None
     messages = Setting.objects.messages().filter(team=invite.team)
@@ -133,8 +134,8 @@ def team_invitation_sent(invite_pk):
         "inviter":invite.author,
         "team": invite.team,
         "invite_pk": invite_pk,
-        'note': invite.note,
-        'custom_message': team_default_message,
+        'notes': invite.note.split('\n'),
+        'custom_messages': team_default_message.split('\n'),
         'url_base': get_url_base(),
     }
     title = fmt(
@@ -173,7 +174,7 @@ def application_sent(application_pk):
             "applicant": application.user,
             "url_base": get_url_base(),
             "team":application.team,
-            "note":application.note,
+            "notes":application.note.split('\n'),
             "user":m.user,
         }
         body = render_to_string(template_name,context)
@@ -208,7 +209,7 @@ def team_application_denied(application_pk):
         "team": application.team,
         "user": application.user,
         "url_base": get_url_base(),
-        "note": application.note,
+        "notes": application.note.split('\n'),
     }
     subject = fmt(
         ugettext(u'Your application to join the %(team)s '
@@ -288,7 +289,7 @@ def team_member_new(member_pk):
        "url_base":get_url_base(),
        "role":member.role,
        "user":member.user,
-       "custom_message": team_default_message,
+       "custom_messages": team_default_message.split('\n'),
     }
     body = render_to_string(template_name,context)
 
@@ -503,7 +504,7 @@ def _reviewed_notification(task_pk, status):
         "url_base":get_url_base(),
         "task":task,
         "reviewer":reviewer,
-        "note":task.body,
+        "notes":task.body.split('\n'),
         "reviewed_and_pending_approval": status == REVIEWED_AND_PENDING_APPROVAL,
         "sent_back": status == REVIEWED_AND_SENT_BACK,
         "reviewed_and_published": status == REVIEWED_AND_PUBLISHED,
@@ -612,7 +613,7 @@ def approved_notification(task_pk, published=False):
         "url_base":get_url_base(),
         "task":task,
         "reviewer":reviewer,
-        "note":task.body,
+        "notes":task.body.split('\n'),
         "subs_url": subs_url,
         "reviewer_message_url": reviewer_message_url,
     }
@@ -673,7 +674,7 @@ def send_reject_notification(task_pk, sent_back):
         "url_base":get_url_base(),
         "task":task,
         "reviewer":reviewer,
-        "note":task.body,
+        "notes":task.body.split('\n'),
         "sent_back": sent_back,
         "subs_url": subs_url,
         "reviewer_message_url": reviewer_message_url,

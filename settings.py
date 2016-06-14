@@ -394,6 +394,26 @@ API_DOCS_MODULES = [
 ]
 
 MEDIA_BUNDLES = {
+    "amara.css": {
+        "files": [
+            "amara/css/main.scss",
+        ],
+        "include_paths": [
+            'bower/bootstrap-sass/assets/stylesheets',
+        ]
+    },
+    "amara.js": {
+        "files": [
+            'bower/jquery/dist/jquery.js',
+            'bower/bootstrap/dist/js/bootstrap.js',
+            'bower/chartist/dist/chartist.js',
+            'bower/chartist-plugin-tooltip/dist/chartist-plugin-tooltip.js',
+            'bower/EasyAutocomplete/dist/jquery.easy-autocomplete.js',
+            'bower/select2/dist/js/select2.js',
+            'amara/js/_plugins.js',
+            'amara/js/main.js',
+        ],
+    },
     "base.css": {
         "files": (
             "css/jquery.jgrowl.css",

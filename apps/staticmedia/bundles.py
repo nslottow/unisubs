@@ -184,6 +184,10 @@ class CSSBundle(Bundle):
         ]
         for path in media_directories():
             cmdline.extend(['--load-path', os.path.join(path, 'css')])
+        for path in self.paths():
+            cmdline.extend(['--load-path', os.path.dirname(path)])
+        for include_path in self.config.get('include_paths', []):
+            cmdline.extend(['--load-path', self.path(include_path)])
         cmdline.extend(['--scss', '--stdin'])
         return utils.run_command(cmdline, stdin=source_css)
 

@@ -1,0 +1,35 @@
+{% load i18n %}
+{% load url from future %}
+<div id="page-header">
+  <div id="topnav">
+    <ul class="nav navbar-right">
+      {% include "future/user-menu.html" %}
+      <li><a class="home" href="{% url "home" %}"><img src="{{ STATIC_URL }}images/amara-o.png" /></a></li>
+    </ul>
+  </div>
+  <div id="mainnav">
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#"><img src="{% asset_path 'logo-ted.svg' %}" alt="TED Logo">TED Team</a>
+        </div>
+        <div class="collapse navbar-collapse" id="navbar-collapse">
+          <ul class="nav navbar-nav">
+            {% assign current = page.url | downcase | remove: '.html' %}
+            <li {% if current =='/' %}class="active"{% endif %}><a href="{{ site.baseurl }}/">Dashboard</a></li>
+            <li {% if current =='/video' %}class="active"{% endif %}><a href="{{ site.baseurl }}/video">Videos</a></li>
+            <li {% if current =='/member_directory' %}class="active"{% endif %}><a href="{{ site.baseurl }}/member_directory">Members</a></li>
+            <li {% if current =='/activity' %}class="active"{% endif %}><a href="{{ site.baseurl }}/activity">Activity</a></li>
+            <li {% if current =='/resources' %}class="active"{% endif %}><a href="{{ site.baseurl }}/resources">Resources</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </div>
+</div>

@@ -225,105 +225,29 @@ def shortlink(request, encoded_pk):
     video = get_object_or_404(Video, pk=pk)
     return redirect(video, video=video, permanent=True)
 
-class VideoPageContext(dict):
-    """Context dict for the video page."""
-    def __init__(self, request, video, video_url, tab, workflow,
-                 tab_only=False):
-        dict.__init__(self)
-        self.workflow = workflow
-        self['video'] = video
-        self['create_subtitles_form'] = CreateSubtitlesForm(
-            request, video, request.POST or None)
-        self['extra_tabs'] = workflow.extra_tabs(request.user)
-        if not tab_only:
-            self.setup(request, video, video_url)
-        self.setup_tab(request, video, video_url, tab)
-
-    def setup(self, request, video, video_url):
-        self['widget_settings'] = json.dumps(
-            widget_rpc.get_general_settings(request))
-        self['add_language_mode'] = self.workflow.get_add_language_mode(
-            request.user)
-
-        self['task'] =  _get_related_task(request)
-        team_video = video.get_team_video()
-        if team_video is not None:
-            self['team'] = team_video.team
-            self['team_video'] = team_video
-        else:
-            self['team'] = self['team_video'] = None
-
-    def setup_tab(self, request, video, video_url, tab):
-        for name, title in self['extra_tabs']:
-            if tab == name:
-                self['extra_tab'] = True
-                self.setup_extra_tab(request, video, video_url, tab)
-                return
-        self['extra_tab'] = False
-        method_name = 'setup_tab_%s' % tab
-        setup_tab_method = getattr(self, method_name, None)
-        if setup_tab_method:
-            setup_tab_method(request, video, video_url)
-
-    def setup_extra_tab(self, request, video, video_url, tab):
-        method_name = 'setup_tab_%s' % tab
-        setup_tab_method = getattr(self.workflow, method_name, None)
-        if setup_tab_method:
-            self.update(setup_tab_method(request, video, video_url))
-
-    def setup_tab_video(self, request, video, video_url):
-        self['width'] = video_size["large"]["width"]
-        self['height'] = video_size["large"]["height"]
-
-    def setup_tab_urls(self, request, video, video_url):
-        self['create_videourl_form'] = CreateVideoUrlForm(request.user, initial={
-            'video': video.pk,
-        })
-        self['video_urls'] = [
-            (vurl, get_sync_account(video, vurl))
-            for vurl in video.videourl_set.all()
-        ]
-
 @get_video_from_code
 def redirect_to_video(request, video):
     return redirect(video, permanent=True)
 
-def calc_tab(request, workflow):
-    tab = request.GET.get('tab')
-    if tab in ('urls', 'comments', 'activity', 'video'):
-        return tab # default tab
-    for name, title in workflow.extra_tabs(request.user):
-        if name == tab:
-            # workflow extra tab
-            return tab
-    # invalid tab, force it to be video
-    return 'video'
-
 @get_cached_video_from_code('video-page')
 def video(request, video, video_url=None, title=None):
-    """
-    If user is about to perform a task on this video, then t=[task.pk]
-    will be passed to as a url parameter.
-    """
-
     if video_url:
-        video_url = get_object_or_404(VideoUrl, pk=video_url)
+        video_url = get_object_or_404(video.videourl_set, pk=video_url)
+    else:
+        video_url = video.get_primary_videourl_obj()
 
-    # FIXME: what is this crazy mess?
-    if not video_url and ((video.title_for_url() and not video.title_for_url() == title) or (not video.title and title)):
-        return redirect(video, permanent=True)
+    if request.method == 'POST':
+        create_subtitles_form = CreateSubtitlesForm(request, video,
+                                                    request.POST)
+        if create_subtitles_form.is_valid():
+            return create_subtitles_form.handle_post()
+    else:
+        create_subtitles_form = CreateSubtitlesForm(request, video)
 
-    workflow = video.get_workflow()
-
-    tab = calc_tab(request, workflow)
-    template_name = 'videos/video-%s.html' % tab
-    context = VideoPageContext(request, video, video_url, tab, workflow)
-    context['tab'] = tab
-
-    if context['create_subtitles_form'].is_valid():
-        return context['create_subtitles_form'].handle_post()
-
-    return render(request, template_name, context)
+    return render(request, 'future/videos/video.html', {
+        'video': video,
+        'video_url': video_url,
+    })
 
 def _get_related_task(request):
     """

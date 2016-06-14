@@ -1,0 +1,21 @@
+#dialog-box {
+  .modal-dialog {
+    width: 500px;
+  .modal-content {
+    padding: 10px 10px 20px 10px;
+    text-align: center;
+  }
+  .btn {
+    padding: 0px 40px;
+    margin-left: 3px;
+    margin-right: 3px;
+    color: #632e50;
+    background-color: #fff;
+    border: solid 1px #632e50;
+  }
+  .btn-primary {
+    background-color: #632e50;
+    color: #fff;
+    }
+  }
+}

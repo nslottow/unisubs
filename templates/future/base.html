@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+  {% include "future/head.html" %}
+  <body>
+    {% block header %}{% include "future/header.html" %}{% endblock %}
+    <main id="page-content">{% block content %}{% endblock %}</main>
+    {% include "future/footer.html" %}
+  </body>
+</html>

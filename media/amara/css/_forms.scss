@@ -1,0 +1,48 @@
+input, .easy-autocomplete input {
+  line-height: 30px;
+  width: 100%;
+  padding: 0 10px;
+  margin: 5px 0;
+  border: 1px solid $gray-light;
+  border-radius: $border-radius-base;
+}
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent;
+  border: none;
+  &:focus {
+   outline: none;
+  }
+}
+.select {
+  position: relative;
+  cursor: pointer;
+  &:after {
+    content: "\e901";
+    display: inline-block;
+    position: relative;
+    font-family: 'amara' !important;
+    speak: none;
+    transform: rotate(90deg);
+    @include transition();
+    pointer-events: none;
+  }
+}
+
+.searchbar {
+  position: relative;
+  &:after {
+    content: "\e905";
+    display: block;
+    position: absolute;
+    right: 15px;
+    top: 8px;
+    font-family: 'amara' !important;
+    speak: none;
+    text-transform: none;
+    font-size: 25px;
+    line-height: 1;
+    color: $gray-light;
+  }
+}

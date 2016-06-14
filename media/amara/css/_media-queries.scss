@@ -1,0 +1,36 @@
+@media(max-width: 1200px) {
+  .container {
+    width:100%;
+  }
+}
+
+@media(max-width: 1024px) {
+  /* -----------------------------------------
+  Global
+  ----------------------------------------- */
+  h1 {
+    font-size: 19px;
+  }
+}
+
+@media(max-width: 768px) {
+
+  #topnav {
+    .dropdown {
+      .dropdown-toggle {
+        padding: 0 0 0 10px;
+      }
+    }
+  }
+  #mainnav {
+    .container {
+      padding: 0;
+    }
+    .navbar-collapse {
+      position: relative;
+      background-color: #fff;
+      box-shadow: 0 4px 2px rgba(0,0,0,0.1);
+      z-index: 10;
+    }    
+  }
+}

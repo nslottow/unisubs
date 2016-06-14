@@ -1,0 +1,10 @@
+{% load i18n media_bundle %}
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Amara - {% trans 'Caption, translate, subtitle and transcribe video.' %}{% endblock %}</title>
+  {% media_bundle "amara.css" %}
+  <link href='https://fonts.googleapis.com/css?family=Raleway:400,700|Open+Sans:400,300,600' rel='stylesheet' type='text/css'>
+  {% media_bundle "amara.js" %}
+</head>

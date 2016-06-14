@@ -1,0 +1,44 @@
+.select2-container--bootstrap {
+  &.select2-container {
+    .select2-selection {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+    .select2-dropdown {
+      border: none;
+      background-color: $gray-darker;
+      color: #fff;
+    }
+    .select2-results__option--highlighted {
+      background-color: $teal;
+    }
+  }
+  .select2-selection--single {
+    padding: 0;
+    height: 22px;
+  }
+  .select2-selection__rendered {
+    display:inline-block;
+    &:after {
+     content: "\e901";
+     display: inline-block;
+     margin-left: 5px;
+     position: relative;
+     font-family: 'amara' !important;
+     speak: none;
+     transform: rotate(90deg);
+     @include transition();
+     pointer-events: none;
+   }
+  }
+  .select2-selection__arrow {
+   display: none;
+  }
+  .select2-container--open {
+    .select2-dropdown--below {
+      border-radius: 0;
+    }
+  }
+}
+

@@ -111,6 +111,7 @@
         {% if user.is_superuser %}
         <li><a target="_blank" href="{% url "auth:login_trap" %}">{% trans 'Impersonate' %}</a></li>
         <li><a target="_blank" href="{% url "billing" %}">{% trans 'Billing' %}</a></li>
+        <li><a target="_blank" href="{% url "providers:provider-dashboard" %}">{% trans 'Provider Dashboard' %}</a></li>
         {% endif %}
       </ul>
       {% block page-controls %}{% endblock %}

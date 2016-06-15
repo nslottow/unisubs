@@ -1,7 +1,7 @@
 {% load i18n amara_cache %}
 {% load url from future %}
 {% if user.is_authenticated %}
-{% cache-by-user new-top-panel %}
+{% cache-by-user future-top-panel %}
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ user }} <span class="caret"></span></a>
   <ul class="dropdown-menu">

@@ -1,0 +1,26 @@
+{% load i18n %}
+{% load url from future %}
+<table class="table video_urls">
+  <thead></thead>
+  <tbody>
+    {% for video_url in video.get_video_urls %}
+    <tr data-url="{{ video_url.url }}" data-id="{{ video_url.id }}"{% if video_url.primary %} class="primary"{% endif %}>
+      <td>{{ video_url.get_type_display }}</td>
+      <td>{{ video_url.url }}</td>
+      <td>
+        {% if not video_url.primary %}
+        {% if allow_delete or allow_make_primary %}
+        <div class="pull-right">
+          {% if allow_make_primary %}<button class="btn btn-xs" data-toggle="url-modal" data-target="#make-url-primary-dialog">{% trans "make primary" %}</button>{% endif %}
+          {% if allow_delete %}<button class="btn btn-xs" data-toggle="url-modal" data-target="#delete-url-dialog">{% trans "delete" %}</button>{% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if create_url_form %}
+<button class="btn btn-primary pull-right" data-toggle="modal" data-target="#add-url-dialog">{% trans "Add URL" %}</button>
+{% endif %}

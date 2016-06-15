@@ -1,0 +1,9 @@
+/*
+ * _util.scss -- required utility functions
+ *
+ * This module contains CSS functions required my the rest of the code.  Right now it's just font-path which allows you to get a link to font resources.
+ */
+
+@function font-path($name) {
+  @return '../fonts/' + $name;
+}

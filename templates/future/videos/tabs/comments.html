@@ -1,0 +1,34 @@
+{% load i18n %}
+{% load url from future %}
+<table class="table table-striped">
+  <thead></thead>
+  <tbody>
+    {% for comment in comments %}
+    <tr>
+      <td>{% include "future/user-icon.html" with user=comment.user %}</td>
+      <td>{% include "future/user-name.html" with user=comment.user %}</td>
+      <td class="comment-body">
+        {{ comment.content|linebreaks }}
+        <span>{{ comment.submit_date|timesince }}</span>
+      </td>
+    </tr>
+    {% endfor %}
+    {% if comment_form %}
+    <tr>
+      <td>{% include "future/user-icon.html" %}</td>
+      <td colspan="2">
+        <form action="" class="ajax" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="comment">
+          {{ comment_form.object_pk }}
+          {{ comment_form.content_type }}
+          <div class="form-group">
+            {{ comment_form.content }}
+          </div>
+          <button type="submit" class="btn btn-primary pull-right">{% trans "Post comment" %}</button>
+        </form>
+      </td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>

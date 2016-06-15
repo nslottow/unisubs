@@ -1,8 +1,9 @@
-#dialog-box {
-  .modal-dialog {
-    width: 500px;
+.modal-dialog {
+  width: 500px;
   .modal-content {
     padding: 10px 10px 20px 10px;
+  }
+  h4 {
     text-align: center;
   }
   .btn {
@@ -16,6 +17,5 @@
   .btn-primary {
     background-color: #632e50;
     color: #fff;
-    }
   }
 }

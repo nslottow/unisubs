@@ -1,9 +1,31 @@
+{% load i18n media_bundle announcement_tags messages_tags %}
 <!DOCTYPE html>
 <html>
-  {% include "future/head.html" %}
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Amara - {% trans 'Caption, translate, subtitle and transcribe video.' %}{% endblock %}</title>
+    {% media_bundle "amara.css" %}
+    <link href='https://fonts.googleapis.com/css?family=Raleway:400,700|Open+Sans:400,300,600' rel='stylesheet' type='text/css'>
+    {% media_bundle "amara.js" %}
+    {% block head-extra %}{% endblock %}
+  </head>
   <body>
     {% block header %}{% include "future/header.html" %}{% endblock %}
-    <main id="page-content">{% block content %}{% endblock %}</main>
+    <main id="page-content">
+      {% if messages %}
+      <div id="messages" class="container">
+        {% for message in messages %}
+        <div class="row">
+          <div class="alert{% if message.tags %} alert-{{ message.tags }}{% endif %}">{{ message|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
     {% include "future/footer.html" %}
+    {% block bottom %}{% endblock %}
   </body>
 </html>

@@ -1,0 +1,21 @@
+{% load i18n %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>&nbsp;</th>
+      <th>{% trans "User" %}</th>
+      <th>{% trans "Activity" %}</th>
+      <th>{% trans "When" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for record in activity %}
+    <tr>
+      <td>{% include "future/user.html" with user=record.user %}</td>
+      <td>{{ record.user }}</td>
+      <td>{{ record.get_message|safe }}</td>
+      <td>{{ record.created|timesince }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

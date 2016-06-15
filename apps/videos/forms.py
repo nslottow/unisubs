@@ -144,6 +144,47 @@ class CreateVideoUrlForm(forms.Form):
             output[key] = '/n'.join([force_unicode(i) for i in value])
         return output
 
+class NewCreateVideoUrlForm(forms.Form):
+    url = VideoURLField()
+
+    def __init__(self, video, user, *args, **kwargs):
+        super(NewCreateVideoUrlForm, self).__init__(*args, **kwargs)
+        self.user = user
+        self.video = video
+
+    def clean(self):
+        data = super(NewCreateVideoUrlForm, self).clean()
+        if 'url' in self.cleaned_data:
+            self.create_video_url()
+        return self.cleaned_data
+
+    def create_video_url(self):
+        """Create our VideoUrl object.
+
+        We do this the last part of the clean() method.
+        """
+        try:
+            self.video_url = self.video.add_url( self.cleaned_data['url'],
+                self.user)
+        except Video.UrlAlreadyAdded, e:
+            raise forms.ValidationError(self.already_added_message(e.video))
+
+    def already_added_message(self, video):
+        if video == self.video:
+            return _('Video URL already added to this video')
+
+        if video.can_user_see(self.user):
+            link = mark_safe('<a href="{}">{}</a>'.format(
+                video.get_absolute_url(), ugettext('view video')))
+            return fmt(
+                _('Video URL already added to a different video (%(link)s)'),
+                link=link)
+        else:
+            return _('Video URL already added to a different video')
+
+    def save(self):
+        return self.video_url
+
 class UserTestResultForm(forms.ModelForm):
 
     class Meta:

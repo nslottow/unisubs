@@ -220,7 +220,7 @@ class Team(models.Model):
                                       blank=True,
                                       default='',
                                       upload_to='teams/square-logo/',
-                                      thumb_sizes=[(100, 100), (48, 48)])
+                                      thumb_sizes=[(100, 100), (30, 30)])
     is_visible = models.BooleanField(_(u'videos public?'), default=True)
     videos = models.ManyToManyField(Video, through='TeamVideo',  verbose_name=_('videos'))
     users = models.ManyToManyField(User, through='TeamMember', related_name='teams', verbose_name=_('users'))
@@ -441,7 +441,7 @@ class Team(models.Model):
     def square_logo_thumbnail_small(self):
         """URL for a small version of this team's square logo, or None."""
         if self.square_logo:
-            return self.square_logo.thumb_url(48, 48)
+            return self.square_logo.thumb_url(30, 30)
 
     # URLs
     @models.permalink

@@ -26,8 +26,10 @@ COMMENT_MAX_LENGTH = getattr(settings,'COMMENT_MAX_LENGTH',3000)
 
 class CommentForm(forms.ModelForm):
     honeypot = forms.CharField(required=False, widget=forms.HiddenInput)
-    content = forms.CharField(label='Comment', widget=forms.Textarea,
-                                    max_length=COMMENT_MAX_LENGTH)
+    content = forms.CharField(label='Comment', max_length=COMMENT_MAX_LENGTH,
+                              widget=forms.Textarea(attrs={
+                                  'placeholder': _("Write a comment"),
+                              }))
 
     class Meta:
         model = Comment

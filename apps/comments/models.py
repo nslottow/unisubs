@@ -65,7 +65,7 @@ class Comment(models.Model):
 
 def comment_post_save_handler(sender, instance, created, **kwargs):
     from messages.tasks import send_video_comment_notification
-    send_video_comment_notification.delay(instance)
+    send_video_comment_notification.delay(instance.pk)
 
 
 post_save.connect(Awards.on_comment_save, Comment)

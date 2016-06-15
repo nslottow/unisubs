@@ -31,7 +31,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.sites.models import Site
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from videos.templatetags.paginator import paginate
 from django.core.urlresolvers import reverse
 from django.db import IntegrityError
@@ -41,6 +41,7 @@ from django.http import (HttpResponse, Http404, HttpResponseRedirect,
 from django.shortcuts import (render, render_to_response, get_object_or_404,
                               redirect)
 from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils.encoding import force_unicode
 from django.utils.http import urlquote_plus
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -52,6 +53,8 @@ import widget
 from widget import rpc as widget_rpc
 from activity.models import ActivityRecord
 from auth.models import CustomUser as User
+from comments.models import Comment
+from comments.forms import CommentForm
 from subtitles.models import SubtitleLanguage, SubtitleVersion
 from subtitles.permissions import (user_can_view_private_subtitles,
                                    user_can_edit_subtitles)
@@ -64,7 +67,7 @@ from videos.decorators import (get_video_revision, get_video_from_code,
                                get_cached_video_from_code)
 from videos.forms import (
     VideoForm, FeedbackForm, EmailFriendForm, UserTestResultForm,
-    CreateVideoUrlForm, AddFromFeedForm,
+    CreateVideoUrlForm, NewCreateVideoUrlForm, AddFromFeedForm,
     ChangeVideoOriginalLanguageForm, CreateSubtitlesForm,
 )
 from videos.models import (
@@ -229,24 +232,161 @@ def shortlink(request, encoded_pk):
 def redirect_to_video(request, video):
     return redirect(video, permanent=True)
 
-@get_cached_video_from_code('video-page')
-def video(request, video, video_url=None, title=None):
+def video(request, video_id, video_url=None, title=None):
+    if request.is_ajax():
+        return video_ajax_form(request, video_id)
+    request.use_cached_user()
+    try:
+        video = Video.cache.get_instance_by_video_id(video_id, 'video-page')
+    except Video.DoesNotExist:
+        raise Http404
+    if not video.can_user_see(request.user):
+        raise PermissionDenied()
+
     if video_url:
         video_url = get_object_or_404(video.videourl_set, pk=video_url)
     else:
         video_url = video.get_primary_videourl_obj()
 
-    if request.method == 'POST':
-        create_subtitles_form = CreateSubtitlesForm(request, video,
-                                                    request.POST)
-        if create_subtitles_form.is_valid():
-            return create_subtitles_form.handle_post()
-    else:
+    workflow = video.get_workflow()
+    if workflow.user_can_edit_video(request.user):
         create_subtitles_form = CreateSubtitlesForm(request, video)
+    else:
+        create_subtitles_form = None
+    if request.user.is_authenticated():
+        comment_form = CommentForm(video)
+    else:
+        comment_form = None
+    if permissions.can_user_edit_video_urls(video, request.user):
+        create_url_form = NewCreateVideoUrlForm(video, request.user)
+        allow_delete = allow_make_primary = True
+    else:
+        create_url_form = None
+        allow_delete = allow_make_primary = False
 
     return render(request, 'future/videos/video.html', {
         'video': video,
-        'video_url': video_url,
+        'player_url': video_url.url,
+        'completed_languages': video.completed_languages(),
+        'team_video': video.get_team_video(),
+        'tab': request.GET.get('tab', 'info'),
+        'allow_delete': allow_delete,
+        'allow_make_primary': allow_make_primary,
+        'create_subtitles_form': create_subtitles_form,
+        'comment_form': comment_form,
+        'create_url_form': create_url_form,
+        'comments': Comment.get_for_object(video),
+        'activity': ActivityRecord.objects.for_video(video)[:8],
+        'metadata': video.get_metadata().convert_for_display(),
+    })
+
+def video_ajax_form(request, video_id):
+    form = request.POST.get('form')
+    video = get_object_or_404(Video, video_id=video_id)
+    if form == 'comment':
+        return video_comment_form(request, video)
+    elif form == 'add-url':
+        return video_add_url_form(request, video)
+    elif form == 'make-url-primary':
+        return video_make_url_primary_form(request, video)
+    elif form == 'delete-url':
+        return video_delete_url_form(request, video)
+    else:
+        return redirect(video.get_absolute_url())
+
+def video_comment_form(request, video):
+    if not request.user.is_authenticated():
+        raise PermissionDenied()
+    comment_form = CommentForm(video, data=request.POST)
+    success = comment_form.is_valid()
+    if success:
+        comment_form.save(request.user)
+        # reset the comment form to a fresh state
+        comment_form = CommentForm(video)
+
+    content = render_to_string('future/videos/tabs/comments.html', {
+        'video': video,
+        'comments': Comment.get_for_object(video),
+        'comment_form': comment_form,
+    }, context_instance=RequestContext(request))
+    data = {
+        'replace': { '#video_comments': content },
+        'success': success,
+    }
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+def video_add_url_form(request, video):
+    if not permissions.can_user_edit_video_urls(video, request.user):
+        raise PermissionDenied()
+    create_url_form = NewCreateVideoUrlForm(video, request.user,
+                                            data=request.POST)
+    replace = {}
+    if create_url_form.is_valid():
+        create_url_form.save()
+        replace['#video_urls'] = render_urls_tab_after_edit(request, video)
+
+    replace['#add-url-form'] = render_to_string(
+        'future/videos/forms/create-url.html', {
+            'video': video,
+            'create_url_form': create_url_form,
+        }, context_instance=RequestContext(request))
+    data = {
+        'replace': replace,
+        'success': create_url_form.is_valid(),
+    }
+    if create_url_form.is_valid():
+        data['hideModal'] = '#add-url-dialog'
+
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+def video_delete_url_form(request, video):
+    if not permissions.can_user_edit_video_urls(video, request.user):
+        raise PermissionDenied()
+    try:
+        video_url = video.videourl_set.get(id=request.POST.get('id', -1))
+    except VideoUrl.DoesNotExist:
+        success = False
+    else:
+        video_url.remove(request.user)
+        success = True
+
+    replace = {}
+    replace['#video_urls'] = render_urls_tab_after_edit(request, video)
+    data = {
+        'replace': replace,
+        'success': success,
+    }
+    if success:
+        data['hideModal'] = '#delete-url-dialog'
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+def video_make_url_primary_form(request, video):
+    if not permissions.can_user_edit_video_urls(video, request.user):
+        raise PermissionDenied()
+    try:
+        video_url = video.videourl_set.get(id=request.POST.get('id', -1))
+    except VideoUrl.DoesNotExist:
+        success = False
+    else:
+        video_url.make_primary(request.user)
+        success = True
+
+    replace = {}
+    replace['#video_urls'] = render_urls_tab_after_edit(request, video)
+    data = {
+        'replace': replace,
+        'success': success,
+    }
+    if success:
+        data['hideModal'] = '#make-url-primary-dialog'
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+def render_urls_tab_after_edit(request, video):
+    return render_to_string('future/videos/tabs/urls.html', {
+        'video': video,
+        'allow_delete': True,
+        'allow_make_primary': True,
+        'create_url_form': NewCreateVideoUrlForm(video, request.user),
     })
 
 def _get_related_task(request):

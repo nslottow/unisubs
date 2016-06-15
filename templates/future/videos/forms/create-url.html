@@ -1,0 +1,12 @@
+{% load i18n %}
+{% load url from future %}
+<form method="post" class="ajax" action="">
+  {% csrf_token %}
+  <input type="hidden" name="form" value="add-url" />
+  <div class="form-group">
+    {% include "future/_field.html" with field=create_url_form.url %}
+  </div>
+  <div class="clearfix">
+    <button type="submit" class="btn btn-primary pull-right">{% trans "Add URL" %}</button>
+  </div>
+</form>

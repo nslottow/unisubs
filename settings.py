@@ -396,6 +396,7 @@ API_DOCS_MODULES = [
 MEDIA_BUNDLES = {
     "amara.css": {
         "files": [
+            "amara/css/_util.scss",
             "amara/css/main.scss",
         ],
         "include_paths": [
@@ -410,7 +411,12 @@ MEDIA_BUNDLES = {
             'bower/chartist-plugin-tooltip/dist/chartist-plugin-tooltip.js',
             'bower/EasyAutocomplete/dist/jquery.easy-autocomplete.js',
             'bower/select2/dist/js/select2.js',
+            'bower/jquery-form/jquery.form.js',
+            # TODO: move this out of src once we don't need it for site.js
+            'src/js/third-party/behaviors.js',
             'amara/js/_plugins.js',
+            'amara/js/ajaxForm.js',
+            'amara/js/videoPage.js',
             'amara/js/main.js',
         ],
     },

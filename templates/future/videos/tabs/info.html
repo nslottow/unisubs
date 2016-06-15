@@ -1,0 +1,38 @@
+{% load i18n videos_tags %}
+<dl>
+  <dt>{% trans "Title:" %}</dt>
+  <dd>{{ video.title_display }}
+
+  {% if video.description %}
+  <dt>{% trans "Description:" %}</dt>
+  <dd class="constrain">{{ video.description|linebreaks }}</dd>
+  {% endif %}
+
+  {% if video.primary_audio_language_code %}
+  <dt>{% trans "Language:" %}</dt>
+  <dd>{{ video.get_primary_audio_language_code_display }}</dd>
+  {% endif %}
+
+  {% for entry in metadata %}
+  <dt>{{ entry.label }}</dt>
+  <dd>{{ entry.content }}</dd>
+  {% endfor %}
+
+  {% if team_video %}
+  {% with logo=team_video.team.square_logo_thumbnail_small %}
+  <dt>{% trans "Team:" %}</dt>
+  <dd>{% if logo %}<img src="{{ logo }}" /> {% endif %}{{ team_video.team }}</dd>
+  {% endwith %}
+
+  {% if not team_video.project.is_default_project %}
+  <dt>{% trans "Project:" %}</dt>
+  <dd>{{ team_video.project.name }}</dd>
+  {% endif %}
+
+  {% endif %}
+
+  {% if video.duration %}
+  <dt>{% trans "Duration:" %}</dt>
+  <dd>{{ video.duration|format_duration }}
+  {% endif %}
+</dl>

@@ -39,6 +39,9 @@ Dashboard Sections
         padding: 0 0 0 20px;
         text-align: left;
         background-color: $turquoise;
+        a {
+          color: #fff;
+        }
         &.total{
           padding: 0 10px;
           background-color: #fff;
@@ -82,7 +85,7 @@ Dashboard Sections
 
 #assignments_history {
   table {
-    height: 250px;
+    max-height: 250px;
     table-layout: fixed;
     tr {
       td {

@@ -122,22 +122,26 @@ DOM
       line-height: 30px;
       color: $text-color;
     }
-    &:before {
-      content: '';
-      display: block;
-      position: absolute;
-      top: 5px;
-      left: -27px;
-      background: url("{% asset_path 'logo.svg' %}") no-repeat center center;
-      width: 20px;
-      height: 20px;
-    }
   }
   .dropdown-menu {
     right: 15px;
   }
   .navbar-right {
     margin-right: 0;
+
+    >li {
+      display: inline-block; 
+      a {
+        padding: 5px 10px;
+      }
+    }
+
+    img {
+      display: inline-block;
+      width:20px;
+      height:20px;
+      margin-right: 10px;
+    }
   }
 }
 

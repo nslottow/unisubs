@@ -19,10 +19,8 @@
   {% endfor %}
 
   {% if team_video %}
-  {% with logo=team_video.team.square_logo_thumbnail_small %}
   <dt>{% trans "Team:" %}</dt>
-  <dd>{% if logo %}<img src="{{ logo }}" /> {% endif %}{{ team_video.team }}</dd>
-  {% endwith %}
+  <dd>{% include "future/teams/team.html" with team=team_video.team %}</dd>
 
   {% if not team_video.project.is_default_project %}
   <dt>{% trans "Project:" %}</dt>

@@ -352,6 +352,7 @@ class Video(models.Model):
         blank=True,
         upload_to='video/thumbnail/',
         thumb_sizes=(
+            (720,480),
             (480,270),
             (288,162),
             (120,90),))
@@ -503,6 +504,19 @@ class Video(models.Model):
         if self.thumbnail:
             return self.thumbnail
         return "%simages/video-no-thumbnail-wide.png" % settings.STATIC_URL
+
+    def get_huge_thumbnail(self):
+        """Return a URL to a widescreen version of this video's thumbnail
+
+        This may be an absolute or relative URL, depending on whether the
+        thumbnail is stored in our media folder or on S3.
+
+        """
+        if self.s3_thumbnail:
+            return self.s3_thumbnail.thumb_url(720, 480)
+
+        return "%simages/video-no-thumbnail-huge.png" % settings.STATIC_URL
+
 
     def get_small_thumbnail(self):
         """Return a URL to a small version of this video's thumbnail

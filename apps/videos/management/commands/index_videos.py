@@ -24,7 +24,7 @@ from videos.models import Video, VideoIndex
 import time
 
 class Command(BaseCommand):
-    help = "Adds indexes that have to be defined with raw SQL commands"
+    help = "Recalculate the search index for all videos"
     option_list = BaseCommand.option_list + (
         make_option('-b', '--batch-size', dest='batch-size', default=100,
                     help='Set amount of videos to update at once'),

@@ -62,6 +62,7 @@ from subtitles.forms import SubtitlesUploadForm
 from subtitles.pipeline import rollback_to
 from teams.models import Task
 from utils.decorators import staff_member_required
+from videos import behaviors
 from videos import permissions
 from videos.decorators import (get_video_revision, get_video_from_code,
                                get_cached_video_from_code)
@@ -264,6 +265,7 @@ def video(request, video_id, video_url=None, title=None):
         create_url_form = None
         allow_delete = allow_make_primary = False
 
+    customization = behaviors.video_page_customize(request, video)
     return render(request, 'future/videos/video.html', {
         'video': video,
         'player_url': video_url.url,
@@ -278,6 +280,8 @@ def video(request, video_id, video_url=None, title=None):
         'comments': Comment.get_for_object(video),
         'activity': ActivityRecord.objects.for_video(video)[:8],
         'metadata': video.get_metadata().convert_for_display(),
+        'sidebar_extra': customization.sidebar_extra,
+        'header': customization.header,
     })
 
 def video_ajax_form(request, video_id):

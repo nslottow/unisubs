@@ -16,8 +16,16 @@
 # along with this program.  If not, see
 # http://www.gnu.org/licenses/agpl-3.0.html.
 
+from collections import namedtuple
+
 from utils.behaviors import behavior
 
 @behavior
 def make_video_title(video, title, metadata):
     return title
+
+VideoPageCustomization = namedtuple('VideoPageCustomization',
+                                    'sidebar_extra header')
+@behavior
+def video_page_customize(request, video):
+    return VideoPageCustomization(None, None)

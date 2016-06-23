@@ -45,6 +45,8 @@ from collections import namedtuple
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
 
+from utils.behaviors import DONT_OVERRIDE
+
 class TeamWorkflow(object):
     type_code = NotImplemented
     """Team.workflow_type value for this workflow."""
@@ -113,6 +115,10 @@ class TeamWorkflow(object):
         """
         url = reverse(view_name, kwargs={'slug': self.team.slug})
         return TeamPage(name, title,  url)
+
+    def video_page_customize(self, request, video):
+        """Add extra content to the video sidebar."""
+        return DONT_OVERRIDE
 
     # these can be used to customize the content in the project/language
     # manager pages

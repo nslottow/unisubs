@@ -87,6 +87,7 @@ class TestBuildBundle(TestCase):
             'sass',
             '-t', 'compressed', '-E', 'utf-8',
             '--load-path', os.path.join(self.static_root, 'css'),
+            '--load-path', os.path.join(self.static_root),
             '--scss',
             '--stdin',
         ], stdin=self.read_and_combine_files(css_paths))
@@ -119,6 +120,7 @@ class TestBuildBundle(TestCase):
             'sass',
             '-t', 'expanded', '-E', 'utf-8',
             '--load-path', os.path.join(self.static_root, 'css'),
+            '--load-path', os.path.join(self.static_root),
             '--scss',
             '--stdin',
         ], stdin=self.read_and_combine_files(css_paths))

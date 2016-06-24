@@ -397,6 +397,7 @@ MEDIA_BUNDLES = {
     "amara.css": {
         "files": [
             "amara/css/_util.scss",
+            "bower/select2/dist/css/select2.css",
             "amara/css/main.scss",
         ],
         "include_paths": [

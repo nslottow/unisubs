@@ -15,9 +15,6 @@ $(document).on('ready', function(){
   $('.select_autofill').select2({
     theme: "bootstrap"
   });
-  $('.select_autofill').change(function(){
-    window.console.log($(this).val());
-  });
 
   // Collapsible / Constrained content
   $('.constrain').on('click', function() {

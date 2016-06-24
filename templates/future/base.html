@@ -11,7 +11,7 @@
     {% media_bundle "amara.js" %}
     {% block head-extra %}{% endblock %}
   </head>
-  <body>
+  <body{% block body-extra %}{% endblock %}>
     {% block header %}{% include "future/header.html" %}{% endblock %}
     <main id="page-content">
       {% if messages %}

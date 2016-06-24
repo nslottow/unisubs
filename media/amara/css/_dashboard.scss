@@ -1,6 +1,16 @@
 /* -----------------------------------------
 Dashboard Sections
 ----------------------------------------- */
+body.dashboard {
+  section {
+    &:nth-of-type(even) {
+      background: $gray-lighter;
+      border-top: 1px solid $gray-light;
+      border-bottom: 1px solid $gray-light;
+    }
+  }
+}
+
 #my_assignments {
   .card {
     width: 255px;
@@ -14,7 +24,7 @@ Dashboard Sections
       }
     }
     .btn {
-      margin-bottom: 5px;
+      margin-bottom: 8px;
     }
   }
 }
@@ -192,16 +202,6 @@ Dashboard Sections
 Responsive
 ----------------------------------------- */
 @media (max-width: 1200px) {
-  body.dashboard {
-    section {
-      &:nth-of-type(even) {
-        background: $gray-lighter;
-        border-top: 1px solid $gray-light;
-        border-bottom: 1px solid $gray-light;
-      }
-    }
-  }
-
   #my_assignments {
     .card {
       width: 47%;

@@ -11,7 +11,7 @@
   <tbody>
     {% for record in activity %}
     <tr>
-      <td>{% include "future/user.html" with user=record.user %}</td>
+      <td>{% include "future/user-icon.html" with user=record.user %}</td>
       <td>{{ record.user }}</td>
       <td>{{ record.get_message|safe }}</td>
       <td>{{ record.created|timesince }}</td>

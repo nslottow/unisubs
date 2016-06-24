@@ -6,7 +6,7 @@
     {% for video_url in video.get_video_urls %}
     <tr data-url="{{ video_url.url }}" data-id="{{ video_url.id }}"{% if video_url.primary %} class="primary"{% endif %}>
       <td>{{ video_url.get_type_display }}</td>
-      <td>{{ video_url.url }}</td>
+      <td><a href="{{ video_url.url }}" target="_blank">{{ video_url.url }}</a></td>
       <td>
         {% if not video_url.primary %}
         {% if allow_delete or allow_make_primary %}

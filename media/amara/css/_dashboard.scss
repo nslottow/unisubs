@@ -13,7 +13,7 @@ body.dashboard {
 
 #my_assignments {
   .card {
-    width: 255px;
+    width: 260px;
     footer {
       height: 50px;
       display: table;
@@ -43,6 +43,7 @@ body.dashboard {
       color: #ffffff;
       font-size: 15px;
       font-weight: 600;
+      cursor: pointer;
       span {
         display: table-cell;
         vertical-align: middle;

@@ -116,13 +116,12 @@ body.dashboard {
         &:last-child {
           width: 120px;
           text-align: right;
-        }
-        span {
-          display: inline-block;
-          padding: 0 6px;
 
-          i {
+          i.icon {
+            display: inline-block;
+            width: 30px;
             margin: 0;
+            text-align: center;
           }
         }
       }

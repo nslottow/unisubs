@@ -251,3 +251,7 @@ def sharing_widget_for_video(video):
     context = share_utils.share_panel_context_for_video(video)
     content = render_to_string('_sharing_widget.html', context)
     return content
+
+@register.filter
+def speaker_name(video):
+    return video.get_metadata().get('speaker-name')

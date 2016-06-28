@@ -55,7 +55,7 @@ Creating Users
 
     :<json username username: 30 chars or fewer alphanumeric chars,
         @, _ and are accepted.
-    :<json emali email: A valid email address
+    :<json email email: A valid email address
     :<json string password: any number of chars, all chars allowed.
     :<json string first_name: Any chars, max 30 chars. **(optional)**
     :<json string last_name: Any chars, max 30 chars. **(optional)**
@@ -214,6 +214,7 @@ class UserUpdateSerializer(UserSerializer):
         fields = UserSerializer.Meta.fields + (
             'email', 'api_key', 'password',
         )
+        extra_kwargs = {'email': {'write_only': True}}
 
 class UserViewSet(mixins.RetrieveModelMixin,
                   mixins.CreateModelMixin,

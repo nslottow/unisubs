@@ -128,43 +128,6 @@ class BillingRecordTest(TestCase):
         self.assertEquals(data[video.video_id, 'de']['Language number'], 3)
         self.assertEquals(data[video2.video_id, 'fr']['Language number'], 2)
 
-    def test_missing_records(self):
-        date_maker = DateMaker()
-        user = TeamMemberFactory(team=self.team).user
-
-        video = VideoFactory(primary_audio_language_code='en')
-        TeamVideoFactory(team=self.team, video=video, added_by=user)
-        # For en and de, we call pipeline.add_subtitles directly, so there's
-        # no BillingRecord in the sytem.  This simulates the languages that
-        # were completed before BillingRecords were around.
-        add_subtitles(video, 'en', make_subtitle_lines(4),
-                           created=date_maker.next_date(),
-                           complete=True)
-        add_subtitles(video, 'de', make_subtitle_lines(4),
-                           created=date_maker.next_date(),
-                           complete=True)
-        # pt-br has a uncompleted subtitle language.  We should not list that
-        # language in the report
-        add_subtitles(video, 'pt-br', make_subtitle_lines(4),
-                           created=date_maker.next_date(),
-                           complete=False)
-        self.add_subtitles(video, 'fr', make_subtitle_lines(4),
-                           created=date_maker.next_date(),
-                           complete=True)
-        self.add_subtitles(video, 'es', make_subtitle_lines(4),
-                           created=date_maker.next_date(),
-                           complete=True)
-        data = self.get_report_data(self.team,
-                                    date_maker.start_date(),
-                                    date_maker.end_date())
-        self.assertEquals(len(data), 4)
-        self.assertEquals(data[video.video_id, 'en']['Language number'], 0)
-        self.assertEquals(data[video.video_id, 'de']['Language number'], 0)
-        self.assertEquals(data[video.video_id, 'fr']['Language number'], 1)
-        self.assertEquals(data[video.video_id, 'es']['Language number'], 2)
-        self.assertEquals(data[video.video_id, 'en']['Minutes'], 0)
-        self.assertEquals(data[video.video_id, 'de']['Minutes'], 0)
-
     def test_minutes(self):
         date_maker = DateMaker()
         user = TeamMemberFactory(team=self.team).user

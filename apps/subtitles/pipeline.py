@@ -64,6 +64,7 @@ from subtitles.models import (
 from subtitles import signals
 from subtitles import workflows
 from teams.signals import api_subtitles_edited
+from videos.tasks import video_changed_tasks
 
 # Utility Functions -----------------------------------------------------------
 def _strip_nones(d):
@@ -545,7 +546,7 @@ def add_subtitles(video, language_code, subtitles,
     if action:
         action.perform(author, video, version.subtitle_language, version)
     subtitle_language.thaw()
-
+    video_changed_tasks.delay(video.id, version.id)
     return version
 
 def _calc_action_for_add_subtitles(video, language_code, author, complete,

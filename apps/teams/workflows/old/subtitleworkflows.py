@@ -36,7 +36,6 @@ from teams.workflows.subtitleworkflows import TeamSubtitlesWorkflow
 from utils import send_templated_email
 from utils import translation
 from utils.text import fmt
-from videos.tasks import video_changed_tasks
 import subtitles.workflows
 
 def _publish_subtitles_if_needed(subtitle_language, version):
@@ -63,7 +62,6 @@ def _complete_task(user, video, subtitle_language, saved_version, approved):
             version_id = None
         else:
             version_id = saved_version.id
-            video_changed_tasks.delay(team_video.video_id, version_id)
 
 class TaskAction(subtitles.workflows.Action):
     def update_language(self, user, video, subtitle_language, saved_version):

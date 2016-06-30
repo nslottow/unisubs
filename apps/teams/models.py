@@ -215,11 +215,12 @@ class Team(models.Model):
     logo = S3EnabledImageField(verbose_name=_(u'logo'), blank=True,
                                upload_to='teams/logo/',
                                default='',
+                               legacy_filenames=False,
                                thumb_sizes=[(280, 100), (100, 100)])
     square_logo = S3EnabledImageField(verbose_name=_(u'square logo'),
-                                      blank=True,
-                                      default='',
                                       upload_to='teams/square-logo/',
+                                      default='', blank=True,
+                                      legacy_filenames=False,
                                       thumb_sizes=[(100, 100), (40, 40), (30, 30)])
     is_visible = models.BooleanField(_(u'videos public?'), default=True)
     videos = models.ManyToManyField(Video, through='TeamVideo',  verbose_name=_('videos'))

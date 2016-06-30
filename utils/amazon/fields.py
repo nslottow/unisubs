@@ -37,12 +37,23 @@ class S3ImageFieldFile(FieldFile):
     def _get_thumbnail_name(self, size):
         """"Get the name for a thumbnail.
 
-        This method employs some extremely wonkey logic to duplicate the thumbnail
-        names that solr-thumbnail created for us
+        Args:
+            name: name of the original file
+            size: width/height of the thumbnail as a tuple
 
-        :param name: name of the original file
-        :param size: width/height of the thumbnail as a tuple
-        :returns: filename string
+        Returns: filename
+        """
+        if self.field.legacy_filenames:
+            return self._get_thumbnail_name_legacy(size)
+
+        basename, ext = os.path.splitext(self.name)
+        return '{}_{}x{}{}'.format(basename, size[0], size[1], ext)
+
+    def _get_thumbnail_name_legacy(self, size):
+        """Legacy version of _get_thumbnail_name
+
+        This method employs some extremely wonkey logic to duplicate the
+        thumbnail names that solr-thumbnail created for us
         """
         return "%s_%sx%s_crop-smart_upscale-True_q85.jpg" % (
             self.name.replace('.', '_'), size[0], size[1])
@@ -67,15 +78,23 @@ class S3ImageFieldFile(FieldFile):
         :param size: width/height as a tuple
         """
 
-        dest_image = scale_and_crop(image, size, crop='smart', upscale=True)
+        if image.size != size:
+            dest_image = scale_and_crop(image, size, crop='smart', upscale=True)
+        else:
+            dest_image = image
+
         dest_bytes = StringIO()
-        if dest_image.mode != "RGB":
-            dest_image = dest_image.convert("RGB")
-        dest_image.save(dest_bytes, format="JPEG")
+
+        if self.field.legacy_filenames:
+            # Need to convert the file to a jpeg
+            if dest_image.mode != "RGB":
+                dest_image = dest_image.convert("RGB")
+            dest_image.save(dest_bytes, format="JPEG")
+        else:
+            dest_image.save(dest_bytes, image.format)
 
         self.storage.save(self._get_thumbnail_name(size),
                           ContentFile(dest_bytes.getvalue()))
-
 
     def save(self, name, content, save=True):
         ext = name.split('.')[-1]
@@ -126,9 +145,11 @@ class S3EnabledImageField(models.ImageField):
 
     def __init__(self, bucket=settings.AWS_USER_DATA_BUCKET_NAME,
                  thumb_sizes=THUMB_SIZES, verbose_name=None, name=None,
-                 width_field=None, height_field=None, **kwargs):
+                 width_field=None, height_field=None, legacy_filenames=True,
+                 **kwargs):
         self.thumb_sizes = thumb_sizes
         self.bucket_name = bucket
+        self.legacy_filenames = legacy_filenames
 
         if settings.USE_AMAZON_S3:
             self.connection = S3Connection(settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY)

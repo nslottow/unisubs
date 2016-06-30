@@ -9,6 +9,7 @@
 #    AWS_SECRET_ACCESS_KEY - String
 #
 # ########################################################
+import mimetypes
 import os
 from StringIO import StringIO
 
@@ -24,6 +25,8 @@ from fields import S3EnabledImageField, S3EnabledFileField
 __all__ = ['S3EnabledImageField', 'S3EnabledFileField', 'S3Storage']
 
 DEFAULT_HOST = 's3.amazonaws.com'
+
+mimetypes.init()
 
 class S3StorageError(Exception):
     pass
@@ -78,17 +81,28 @@ class S3Storage(FileSystemStorage):
     def _save(self, name, content):
         name = name.replace('\\', '/')
         key = Key(self.bucket, name)
+        headers = self._calc_headers(name)
         try:
             if hasattr(content, 'temporary_file_path'):
-                key.set_contents_from_filename(content.temporary_file_path())
+                key.set_contents_from_filename(content.temporary_file_path(),
+                                               headers)
             elif isinstance(content, File):
-                key.set_contents_from_file(content)
+                key.set_contents_from_file(content, headers)
             else:
-                key.set_contents_from_string(content)
+                key.set_contents_from_string(content, headers)
             key.make_public()
             return name
         except (BotoClientError, BotoServerError), e:
             raise S3StorageError(*e.args)
+
+    def _calc_headers(self, name):
+        headers = { }
+        ext = os.path.splitext(name)[1]
+        content_type = mimetypes.types_map.get(ext)
+        if content_type:
+            headers['Content-Type'] = content_type
+        return headers
+
 
     def _get_traceback(self):
         "Helper function to return the traceback as a string"

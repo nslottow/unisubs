@@ -413,10 +413,12 @@ MEDIA_BUNDLES = {
             'bower/EasyAutocomplete/dist/jquery.easy-autocomplete.js',
             'bower/select2/dist/js/select2.js',
             'bower/jquery-form/jquery.form.js',
+            'bower/underscore/underscore.js',
             # TODO: move this out of src once we don't need it for site.js
             'src/js/third-party/behaviors.js',
             'amara/js/_plugins.js',
             'amara/js/ajaxForm.js',
+            'amara/js/dropdown.js',
             'amara/js/videoPage.js',
             'amara/js/main.js',
         ],

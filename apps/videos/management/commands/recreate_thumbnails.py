@@ -34,8 +34,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for video in self.lookup_videos(args, options):
-            print video.title_display()
-            video.s3_thumbnail.recreate_all_thumbnails()
+            try:
+                video.s3_thumbnail.recreate_all_thumbnails()
+                print video.title_display()
+            except:
+                print '* {}'.format(video.title_display())
 
     def lookup_videos(self, args, options):
         if options['all']:

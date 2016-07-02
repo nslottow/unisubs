@@ -258,7 +258,7 @@ Utility Classes
       padding-right: 30px;
       padding-top: 40px;
       color: #ffffff;
-      background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.3));
+      background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5));
       h4 {
         @include clamp(2, 1.2);
       }

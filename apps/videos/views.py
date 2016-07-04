@@ -41,7 +41,6 @@ from django.http import (HttpResponse, Http404, HttpResponseRedirect,
 from django.shortcuts import (render, render_to_response, get_object_or_404,
                               redirect)
 from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils.encoding import force_unicode
 from django.utils.http import urlquote_plus
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -61,6 +60,7 @@ from subtitles.permissions import (user_can_view_private_subtitles,
 from subtitles.forms import SubtitlesUploadForm
 from subtitles.pipeline import rollback_to
 from teams.models import Task
+from utils.ajax import AJAXResponseRenderer
 from utils.decorators import staff_member_required
 from videos import behaviors
 from videos import permissions
@@ -308,40 +308,34 @@ def video_comment_form(request, video):
         # reset the comment form to a fresh state
         comment_form = CommentForm(video)
 
-    content = render_to_string('future/videos/tabs/comments.html', {
-        'video': video,
-        'comments': Comment.get_for_object(video),
-        'comment_form': comment_form,
-    }, context_instance=RequestContext(request))
-    data = {
-        'replace': { '#video_comments': content },
-        'success': success,
-    }
-    return HttpResponse(json.dumps(data), content_type='application/json')
+    response_renderer = AJAXResponseRenderer(request,
+                                             clear_form=comment_form.is_valid())
+    response_renderer.replace(
+        '#video_comments', 'future/videos/tabs/comments.html', {
+            'video': video,
+            'comments': Comment.get_for_object(video),
+            'comment_form': comment_form,
+        })
+    return response_renderer.render()
 
 def video_add_url_form(request, video):
     if not permissions.can_user_edit_video_urls(video, request.user):
         raise PermissionDenied()
     create_url_form = NewCreateVideoUrlForm(video, request.user,
                                             data=request.POST)
-    replace = {}
+    response_renderer = AJAXResponseRenderer(request)
     if create_url_form.is_valid():
         create_url_form.save()
-        replace['#video_urls'] = render_urls_tab_after_edit(request, video)
+        response_renderer.clear_form()
+        response_renderer.replace(*urls_tab_replacement_data(request, video))
+        response_renderer.hide_modal('#add-url-dialog')
+    response_renderer.replace('#add-url-form',
+                              'future/videos/forms/create-url.html', {
+                                  'video': video,
+                                  'create_url_form': create_url_form,
+                              })
 
-    replace['#add-url-form'] = render_to_string(
-        'future/videos/forms/create-url.html', {
-            'video': video,
-            'create_url_form': create_url_form,
-        }, context_instance=RequestContext(request))
-    data = {
-        'replace': replace,
-        'success': create_url_form.is_valid(),
-    }
-    if create_url_form.is_valid():
-        data['hideModal'] = '#add-url-dialog'
-
-    return HttpResponse(json.dumps(data), content_type='application/json')
+    return response_renderer.render()
 
 def video_delete_url_form(request, video):
     if not permissions.can_user_edit_video_urls(video, request.user):
@@ -354,15 +348,11 @@ def video_delete_url_form(request, video):
         video_url.remove(request.user)
         success = True
 
-    replace = {}
-    replace['#video_urls'] = render_urls_tab_after_edit(request, video)
-    data = {
-        'replace': replace,
-        'success': success,
-    }
+    response_renderer = AJAXResponseRenderer(request)
     if success:
-        data['hideModal'] = '#delete-url-dialog'
-    return HttpResponse(json.dumps(data), content_type='application/json')
+        response_renderer.replace(*urls_tab_replacement_data(request, video))
+        response_renderer.hide_modal('#delete-url-dialog')
+    return response_renderer.render()
 
 def video_make_url_primary_form(request, video):
     if not permissions.can_user_edit_video_urls(video, request.user):
@@ -375,23 +365,19 @@ def video_make_url_primary_form(request, video):
         video_url.make_primary(request.user)
         success = True
 
-    replace = {}
-    replace['#video_urls'] = render_urls_tab_after_edit(request, video)
-    data = {
-        'replace': replace,
-        'success': success,
-    }
+    response_renderer = AJAXResponseRenderer(request)
     if success:
-        data['hideModal'] = '#make-url-primary-dialog'
-    return HttpResponse(json.dumps(data), content_type='application/json')
+        response_renderer.replace(*urls_tab_replacement_data(request, video))
+        response_renderer.hide_modal('#make-url-primary-dialog')
+    return response_renderer.render()
 
-def render_urls_tab_after_edit(request, video):
-    return render_to_string('future/videos/tabs/urls.html', {
-        'video': video,
-        'allow_delete': True,
-        'allow_make_primary': True,
-        'create_url_form': NewCreateVideoUrlForm(video, request.user),
-    })
+def urls_tab_replacement_data(request, video):
+    return ('#video_urls', 'future/videos/tabs/urls.html', {
+            'video': video,
+            'allow_delete': True,
+            'allow_make_primary': True,
+            'create_url_form': NewCreateVideoUrlForm(video, request.user),
+        })
 
 def _get_related_task(request):
     """

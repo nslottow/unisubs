@@ -30,15 +30,6 @@ function dropdown(select) {
         options.data = languageChoiceData(select);
     }
     select.select2(options);
-    if(select.hasClass('ahah')) {
-        select.on('select2:select', function(evt) {
-            var url = select.data('url') + '?selection=' + select.val();
-            var target = $('#' + select.data('target'));
-            $.get(url).done(function(html, status, xhr) {
-                target.empty().append(html);
-            });
-        });
-    }
 }
 
 function languageChoiceData(select) {
@@ -63,6 +54,5 @@ function languageChoiceData(select) {
 function languageChoice(code) {
     return { id: code, text: getLanguageName(code) };
 }
-
 
 })(jQuery);

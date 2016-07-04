@@ -4,8 +4,25 @@
     $.behaviors('form.ajax', ajaxForm);
 
     function ajaxForm(form) {
+        var submitting = false;
+        var sawSecondSubmit = false;
         form = $(form);
         form.ajaxForm({
+            beforeSubmit: function() {
+                if(submitting) {
+                    sawSecondSubmit = true;
+                    return false;
+                } else {
+                    submitting = true;
+                }
+            },
+            complete: function() {
+                submitting = false;
+                if(sawSecondSubmit) {
+                    sawSecondSubmit = false;
+                    form.submit();
+                }
+            },
             success: function(data, statusText, xhr) {
                 if(data && data.replace) {
                     $.each(data.replace, function(selector, html) {

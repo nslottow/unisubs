@@ -243,9 +243,6 @@ Utility Classes
     margin: 0 auto 10px 0;
     overflow: hidden;
     box-sizing: border-box;
-    &:last-child {
-      margin-right: 0;
-    }
     img {
       @extend .img-responsive;
     }

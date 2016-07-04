@@ -14,6 +14,9 @@ body.dashboard {
 #my_assignments {
   .card {
     width: 260px;
+    &:last-child {
+      margin-right: 0;
+    }
     footer {
       height: 50px;
       display: table;
@@ -171,6 +174,7 @@ body.dashboard {
   .grid {
     .card {
       width: 260px;
+      margin: 0 20px 10px 0;
       background-color: $gray-base;
       color: #ffffff;
       &:after {

@@ -1,21 +1,16 @@
 {% load i18n %}
 <table class="table">
-  <thead>
-    <tr>
-      <th>&nbsp;</th>
-      <th>{% trans "User" %}</th>
-      <th>{% trans "Activity" %}</th>
-      <th>{% trans "When" %}</th>
-    </tr>
-  </thead>
   <tbody>
     {% for record in activity %}
+    {% with url=record.get_url %}
     <tr>
       <td>{% include "future/user-icon.html" with user=record.user %}</td>
       <td>{{ record.user }}</td>
-      <td>{{ record.get_message|safe }}</td>
-      <td>{{ record.created|timesince }}</td>
+      <td>{{ record.get_action_name }}</td>
+      <td>{% if record.language_code %}<a href="{{ record.get_language_url }}">{{ record.get_language_code_display }}</a>{% elif url %}<a href="{{ url }}">{{ url }}</a>{% endif %}</td>
+      <td>{{ record.get_time_since }}</td>
     </tr>
+    {% endwith %}
     {% endfor %}
   </tbody>
 </table>

@@ -21,6 +21,7 @@ from django.db import models
 from django.db import transaction
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext, ungettext
 
 from auth.models import CustomUser as User
 from codefield import CodeField, Code
@@ -56,6 +57,14 @@ class ActivityType(Code):
     def get_message(self, record):
         """Get the message to display in activity logs."""
         raise NotImplementedError()
+
+    def get_action_name(self):
+        """Get a short action name for display
+
+        This is displayed on the video activity table, and should be pretty
+        short.  Some examples are "edited", "commented", and "made primary".
+        """
+        return 'unknown'
 
     def format_message(self, record, msg, **data):
         return msg % ActivityMessageDict(record, data)
@@ -104,6 +113,9 @@ class VideoAdded(ActivityType):
             record,
             _('added a video: <a href="%(video_url)s">%(video)s</a>'))
 
+    def get_action_name(self):
+        return _('added')
+
 class VideoTitleChanged(ActivityType):
     slug = 'video-title-changed'
     label = _('Video Title Changed')
@@ -112,6 +124,9 @@ class VideoTitleChanged(ActivityType):
 
     def get_message(self, record):
         return _('edited a video title')
+
+    def get_action_name(self):
+        return _('changed title')
 
 class CommentAdded(ActivityType):
     slug = 'comment-added'
@@ -127,6 +142,9 @@ class CommentAdded(ActivityType):
             return self.format_message(record,
                 _(u'commented on <a href="%(video_url)s">%(video)s</a>'))
 
+    def get_action_name(self):
+        return _('commented')
+
 class VersionAdded(ActivityType):
     slug = 'version-added'
     label = _('Version added')
@@ -135,6 +153,9 @@ class VersionAdded(ActivityType):
         return self.format_message(record,
             _(u'edited <a href="%(language_url)s">%(language)s '
               'subtitles</a> for <a href="%(video_url)s">%(video)s</a>'))
+
+    def get_action_name(self):
+        return _('edited')
 
 class VideoURLAdded(ActivityType):
     slug = 'video-url-added'
@@ -146,6 +167,9 @@ class VideoURLAdded(ActivityType):
         return self.format_message(record,
             _(u'added new URL for <a href="%(video_url)s">%(video)s</a>'))
 
+    def get_action_name(self):
+        return _('added URL')
+
 class TranslationAdded(ActivityType):
     slug = 'translation-added'
     label = _('Translation URL added')
@@ -155,6 +179,9 @@ class TranslationAdded(ActivityType):
 
     def get_message(self, record):
         return _('added a translation')
+
+    def get_action_name(self):
+        return _('translated')
 
 class SubtitleRequestCreated(ActivityType):
     slug = 'subtitle-request-created'
@@ -166,6 +193,9 @@ class SubtitleRequestCreated(ActivityType):
     def get_message(self, record):
         return _('created a subtitle request')
 
+    def get_action_name(self):
+        return _('requested')
+
 class VersionApproved(ActivityType):
     slug = 'version-approved'
     label = _('Version approved')
@@ -174,6 +204,9 @@ class VersionApproved(ActivityType):
         return self.format_message(record,
             _('approved <a href="%(language_url)s">%(language)s</a> subtitles'
               ' for <a href="%(video_url)s">%(video)s</a>'))
+
+    def get_action_name(self):
+        return _('approved')
 
 class MemberJoined(ActivityType):
     slug = 'member-joined'
@@ -194,6 +227,9 @@ class MemberJoined(ActivityType):
             _("Joined the %(team)s team as a %(role)s"),
             role=self.get_role_name(record.related_obj_id))
 
+    def get_action_name(self):
+        return _('joined')
+
     def get_related_obj(self, related_obj_id):
         try:
             return self.code_to_role[related_obj_id]
@@ -213,12 +249,18 @@ class VersionRejected(ActivityType):
             _('rejected <a href="%(language_url)s">%(language)s</a> subtitles'
               ' for <a href="%(video_url)s">%(video)s</a>'))
 
+    def get_action_name(self):
+        return _('rejected')
+
 class MemberLeft(ActivityType):
     slug = 'member-left'
     label = _('Member Left')
 
     def get_message(self, record):
         return self.format_message(record, _("left the %(team)s team"))
+
+    def get_action_name(self):
+        return _('left')
 
 class VersionReviewed(ActivityType):
     slug = 'version-reviewed'
@@ -232,6 +274,9 @@ class VersionReviewed(ActivityType):
             _('reviewed <a href="%(language_url)s">%(language)s</a> subtitles'
               ' for <a href="%(video_url)s">%(video)s</a>'))
 
+    def get_action_name(self):
+        return _('reviewed')
+
 class VersionAccepted(ActivityType):
     slug = 'version-accepted'
     label = _('Version Accepted')
@@ -240,6 +285,9 @@ class VersionAccepted(ActivityType):
         return self.format_message(record,
             _('accepted <a href="%(language_url)s">%(language)s</a> subtitles'
               ' for <a href="%(video_url)s">%(video)s</a>'))
+
+    def get_action_name(self):
+        return _('accepted')
 
 class VersionDeclined(ActivityType):
     slug = 'version-declined'
@@ -250,6 +298,9 @@ class VersionDeclined(ActivityType):
             _('declined <a href="%(language_url)s">%(language)s</a> subtitles'
               ' for <a href="%(video_url)s">%(video)s</a>'))
 
+    def get_action_name(self):
+        return _('declined')
+
 class VideoDeleted(ActivityType):
     slug = 'video-deleted'
     label = _('Video deleted')
@@ -259,6 +310,9 @@ class VideoDeleted(ActivityType):
         deletion = record.get_related_obj()
         return self.format_message(record, _('deleted a video: %(title)s'),
                                    title=deletion.title)
+
+    def get_action_name(self):
+        return _('deleted')
 
 class VideoURLEdited(ActivityType):
     slug = 'video-url-edited'
@@ -273,6 +327,9 @@ class VideoURLEdited(ActivityType):
         return self.format_message(record, msg, old_url=url_edit.old_url,
                                    new_url=url_edit.new_url)
 
+    def get_action_name(self):
+        return _('made URL primary')
+
 class VideoURLDeleted(ActivityType):
     slug = 'video-url-deleted'
     label = _('Video URL deleted')
@@ -282,6 +339,9 @@ class VideoURLDeleted(ActivityType):
         url_edit = record.get_related_obj()
         msg = _('deleted url <a href="%(url)s">%(url)s</a>')
         return self.format_message(record, msg, url=url_edit.old_url)
+
+    def get_action_name(self):
+        return _('deleted URL')
 
 activity_choices = [
     VideoAdded, VideoTitleChanged, CommentAdded, VersionAdded, VideoURLAdded,
@@ -479,7 +539,7 @@ class ActivityRecord(models.Model):
     objects = ActivityManager()
 
     class Meta:
-        ordering = ['-created']
+        ordering = ['-created', '-id']
         # If we were using a newer version of django we would have this:
         #index_together = [
             ## Team activity stream.  There's often lots of activity per-team,
@@ -552,6 +612,37 @@ class ActivityRecord(models.Model):
 
     def get_message(self):
         return self.type_obj.get_message(self)
+
+    def get_action_name(self):
+        return self.type_obj.get_action_name()
+
+    def get_url(self):
+        """Get the URL for URL-related actions."""
+        if self.type_obj.related_model is URLEdit:
+            url_edit = self.get_related_obj()
+            return url_edit.new_url if url_edit.new_url else url_edit.old_url
+        else:
+            return None
+
+    def get_time_since(self):
+        delta = dates.now() - self.created
+        if delta.days != 0:
+            return fmt(
+                ungettext('%(count)s day ago', '%(count)s days ago', delta.days),
+                count=delta.days)
+        elif delta.seconds > 3600:
+            hours = int(round(delta.seconds / 3600.0))
+            return fmt(
+                ungettext('%(count)shour ago', '%(count)s hours ago', hours),
+                count=hours)
+        elif delta.seconds > 60:
+            minutes = int(round(delta.seconds / 60.0))
+            return fmt(
+                ungettext('%(count)s minute ago', '%(count)s minutes ago',
+                          minutes),
+                count=minutes)
+        else:
+            return gettext('Just now')
 
     def get_related_obj(self):
         if not hasattr(self, '_related_obj_cache'):

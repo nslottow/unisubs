@@ -29,6 +29,9 @@ function dropdown(select) {
     if(select.hasClass('languages')) {
         options.data = languageChoiceData(select);
     }
+    if(select.hasClass('nosearchbox')) {
+        options.minimumResultsForSearch = Infinity;
+    }
     select.select2(options);
 }
 

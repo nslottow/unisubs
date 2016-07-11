@@ -398,6 +398,7 @@ MEDIA_BUNDLES = {
         "files": [
             "amara/css/_util.scss",
             "bower/select2/dist/css/select2.css",
+            "bower/select2-bootstrap-theme/dist/select2-bootstrap.css",
             "bower/chartist/dist/chartist.css",
             "amara/css/main.scss",
         ],

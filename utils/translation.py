@@ -233,7 +233,9 @@ def languages_with_labels(langs):
 # This handles RTL info for languages where get_language_info() is not correct
 _RTL_OVERRIDE_MAP = {
     # there are languages on our system that are not on django.
+    'aeb': True,
     'arq': True,
+    'arz': True,
     'pnb': True,
     # Forcing Azerbaijani to be a left-to-right language.
     # For: https://unisubs.sifterapp.com/projects/12298/issues/753035/comments 

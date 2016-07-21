@@ -17,7 +17,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a href="{{ team.get_absolute_url }}" class="navbar-brand">{% if team.square_logo_thumbnail_medium %}<img src="{{ team.square_logo_thumbnail_medium }}" /> {% endif %}{{ team }}</a>
+          <span href="{{ team.get_absolute_url }}" class="navbar-brand">{% if team.square_logo_thumbnail_medium %}<img src="{{ team.square_logo_thumbnail_medium }}" /> {% endif %}{{ team }}</span>
         </div>
         <div class="collapse navbar-collapse" id="navbar-collapse">
           <ul class="nav navbar-nav">

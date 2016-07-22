@@ -20,7 +20,7 @@
 
 (function($) {
 
-$.behaviors('.dropdown', dropdown);
+$.behaviors('select.dropdown', dropdown);
 
 function dropdown(select) {
     select = $(select);

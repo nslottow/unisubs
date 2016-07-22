@@ -26,7 +26,7 @@ function dropdown(select) {
     select = $(select);
     var options = { theme: "bootstrap" };
 
-    if(select.hasClass('languages')) {
+    if(select.data('languageOptions')) {
         options.data = languageChoiceData(select);
     }
     if(select.hasClass('nosearchbox')) {
@@ -37,20 +37,34 @@ function dropdown(select) {
 
 function languageChoiceData(select) {
     var data = [];
-    if(select.hasClass('with-any')) {
+    var enabledSelections = select.data('languageOptions').split(" ");
+    function sectionEnabled(name) {
+        return enabledSelections.indexOf(name) > -1;
+    }
+    if(sectionEnabled('any')) {
         data.push({
             id: 'any',
             text: gettext('Any language')
         });
     }
-    data.push({
-        text: gettext('Popular Languages'),
-        children: _.map(popularLanguages, languageChoice)
-    });
-    data.push({
-        text: gettext('All Languages'),
-        children: _.map(allLanguages, languageChoice)
-    });
+    if(sectionEnabled('my')) {
+        data.push({
+            text: gettext('My Languages'),
+            children: _.map(userLanguages, languageChoice)
+        });
+    }
+    if(sectionEnabled('popular')) {
+        data.push({
+            text: gettext('Popular Languages'),
+            children: _.map(popularLanguages, languageChoice)
+        });
+    }
+    if(sectionEnabled('all')) {
+        data.push({
+            text: gettext('All Languages'),
+            children: _.map(allLanguages, languageChoice)
+        });
+    }
     return data;
 }
 

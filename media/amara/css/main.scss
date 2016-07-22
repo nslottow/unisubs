@@ -267,6 +267,7 @@ Utility Classes
       border: 1px solid $gray-light;
       margin-bottom: 20px;
       header {
+        height: 30px;
         .favorite {
           display: inline-block;
           height: 31px;
@@ -303,7 +304,7 @@ Utility Classes
       .thumb {
         position: relative;
         margin: 0 -1px;
-        min-height: 170px;
+        min-height: 145px;
       }
     }
   }

@@ -168,8 +168,8 @@ body.dashboard {
     ul {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
-      align-items: left;
+      justify-content: flex-start;
+      align-items: center;
       li {
         display: flex;
         width: 50%;
@@ -287,7 +287,17 @@ Responsive
     }
   }
 }
-
+@media(max-width: 900px){
+  #newest_members {
+    .users {
+      ul {
+        li {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
 @media(max-width: 768px){
   body.dashboard {
     section {

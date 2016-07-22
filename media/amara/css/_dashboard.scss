@@ -4,7 +4,7 @@ Dashboard Sections
 body.dashboard {
   section {
     &:nth-of-type(even) {
-      background: $gray-lighter;
+      background: #f8f8f8;
       border-top: 1px solid $gray-light;
       border-bottom: 1px solid $gray-light;
     }
@@ -24,6 +24,7 @@ body.dashboard {
         display: table-cell;
         vertical-align: middle;
         padding: 0 10px;
+        font-size: 12px;
       }
     }
     .btn {
@@ -112,9 +113,6 @@ body.dashboard {
         text-overflow: ellipsis;
         &:first-child {
           width: 50%;
-          a {
-            color:$gray-base;
-          }
         }
         &:last-child {
           width: 120px;
@@ -167,6 +165,26 @@ body.dashboard {
   }
   .users {
     height: 220px;
+    ul {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: left;
+      li {
+        display: flex;
+        width: 50%;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        span {
+          display: inline-block;
+          &:last-child {
+            margin: auto;
+            margin-right: 15px;
+          }
+        }
+      }
+    }
   }
 }
 

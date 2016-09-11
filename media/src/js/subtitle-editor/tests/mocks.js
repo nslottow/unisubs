@@ -3,7 +3,7 @@
     var module = angular.module('amara.SubtitleEditor.mocks', []);
 
     module.factory('VideoPlayer', function() {
-        return jasmine.createSpyObj('VideoPlayer', [
+        var MockVideoPlayer = jasmine.createSpyObj('VideoPlayer', [
             'init',
             'play',
             'pause',
@@ -16,6 +16,24 @@
             'setVolume',
             'playChunk',
         ]);
+        MockVideoPlayer.play.andCallFake(function() {
+            MockVideoPlayer.playing = true;
+        });
+        MockVideoPlayer.pause.andCallFake(function() {
+            MockVideoPlayer.playing = false;
+        });
+        MockVideoPlayer.seek.andCallFake(function(seekTo) {
+            MockVideoPlayer.currentTimeValue = seekTo;
+        });
+        MockVideoPlayer.currentTimeValue = 0;
+        MockVideoPlayer.currentTime.andCallFake(function() {
+            return MockVideoPlayer.currentTimeValue;
+        });
+        MockVideoPlayer.playing = false;
+        MockVideoPlayer.isPlaying.andCallFake(function() {
+            return MockVideoPlayer.playing;
+        });
+        return MockVideoPlayer;
     });
 
     module.factory('SubtitleStorage', ["$q", function($q) {
@@ -37,6 +55,19 @@
         });
         return SubtitleStorage;
     }]);
+
+    module.factory('$timeout', function($q) {
+        var mockTimeout = jasmine.createSpy('$timeout').andCallFake(function() {
+            var promise = $q.defer().promise;
+            mockTimeout.promisesReturned.push(promise);
+            mockTimeout.lastPromiseReturned = promise;
+            return promise;
+        });
+        mockTimeout.promisesReturned = [];
+        mockTimeout.lastPromiseReturned = null;
+        mockTimeout.cancel = jasmine.createSpy('cancel');
+        return mockTimeout;
+    });
 
     module.factory('DomWindow', function() {
         var mockObject = jasmine.createSpyObj('DomWindow', [
@@ -110,7 +141,15 @@
                 },
             ],
             'notes': [],
-            'staticURL': 'http://example.com/'
+            'staticURL': 'http://example.com/',
+            'playbackModes': [
+                { id: 1, idStr: 'magic' },
+                { id: 2, idStr: 'standard' },
+                { id: 3, idStr: 'beginner' }
+            ],
+            'preferences': {
+                playbackModeId: 2
+            }
         };
     });
 }).call(this);

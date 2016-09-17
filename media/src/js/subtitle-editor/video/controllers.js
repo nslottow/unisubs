@@ -124,6 +124,7 @@
             continuousTypingTimeout: null,
             magicPauseStartTime: -1,
             anticipatePauseStartTime: -1,
+            expectedPauseStartTime: -1,
             state: 'inactive', // inactive, anticipating-pause, magic-paused
 
             cancelKeystrokeTimeout: function() {
@@ -139,15 +140,20 @@
                 }
             },
 
-            reset: function() {
+            reset: function(reason) {
                 this.state = 'inactive';
                 this.cancelKeystrokeTimeout();
                 this.cancelContinuousTypingTimeout();
                 this.magicPauseStartTime = -1;
                 this.anticipatePauseStartTime = -1;
+                this.expectedPauseStartTime = -1;
+                console.log('reset reason: ' + reason);
             },
             startAnticipatingPause: function() {
                 this.anticipatePauseStartTime = VideoPlayer.currentTime();
+                this.expectedPauseStartTime = Math.min(
+                    this.anticipatePauseStartTime + this.continuousTypingTimeoutDuration,
+                    VideoPlayer.duration());
 
                 var self = this;
                 self.continuousTypingTimeout = $timeout(function() {
@@ -159,8 +165,11 @@
                 self.continueAnticipatingPause();
             },
             continueAnticipatingPause: function() {
-                if(!VideoPlayer.isPlaying()) {
-                    this.reset();
+                if(this.expectedPauseStartTime < VideoPlayer.duration() && !VideoPlayer.isPlaying()) {
+                    // If the video is not playing and we don't expect to have the video stopped
+                    // by reaching the end of the video, then we have been paused by the user
+                    // or some external piece of code.
+                    this.reset('video paused externally while anticipating magic pause. duration: ' + VideoPlayer.duration() + ', expectedPauseStart: ' + this.expectedPauseStarTime + ', currentTime: ' + VideoPlayer.currentTime());
                     return;
                 }
 
@@ -171,23 +180,21 @@
                 self.keystrokeTimeout = $timeout(function() {
                     // At least 1 second has elapsed without an edit keystroke
                     self.keystrokeTimeout = null;
-                    self.reset();
+                    self.reset('user stopped typing');
                 }, self.keystrokeTimeoutDuration);
             },
             startMagicPause: function() {
-                if(!VideoPlayer.isPlaying()) {
+                if(this.expectedPauseStartTime < VideoPlayer.duration() && !VideoPlayer.isPlaying()) {
                     // We have been paused by the user or some external piece of code
-                    this.reset();
+                    this.reset('video paused externally before magic pause');
                     return;
                 }
 
                 // If we're more than half a second away from the expected pause time,
                 // assume we have been seeked by the user or some external piece of code.
-                var currentTime = VideoPlayer.currentTime();
-                var expectedTime = this.anticipatePauseStartTime + this.continuousTypingTimeoutDuration;
-                var error = Math.abs(expectedTime - currentTime);
+                var error = Math.abs(this.expectedPauseStartTime - VideoPlayer.currentTime());
                 if(error > 500) {
-                    this.reset();
+                    this.reset('video time differs from expected pause time');
                     return;
                 }
 
@@ -195,6 +202,11 @@
                 VideoPlayer.pause();
                 this.magicPauseStartTime = VideoPlayer.currentTime();
                 this.continueMagicPause();
+            },
+            onVideoTimeUpdate: function() {
+                console.log('video time update resume');
+                VideoPlayer.play();
+                $scope.$root.$off('video-time-update', this.onVideoTimeUpdate);
             },
             continueMagicPause: function() {
                 var self = this;
@@ -210,17 +222,25 @@
                     var deltaTime = Math.abs(VideoPlayer.currentTime() - self.magicPauseStartTime);
                     if(!VideoPlayer.isPlaying() && deltaTime < 100) {
                         // NOTE: if the user hits resume withing 100ms of the magic resume, this may still seek backwards, and be upsetting for the user
-                        VideoPlayer.seek(self.magicPauseStartTime - self.resumeRewindAmount);
-                        VideoPlayer.play();
-                    }
+                        console.log('resume');
 
-                    self.reset();
+                        self.postSeekCallback = $scope.$root.$on('video-time-update', function() {
+                            console.log('video time update resume');
+                            VideoPlayer.seekAndPlay(VideoPlayer.currentTime());
+                            self.postSeekCallback();
+                            self.postSeekCallback = null
+                        });
+                        VideoPlayer.seek(self.magicPauseStartTime - self.resumeRewindAmount);
+                        self.reset('successfully rewound and resume from magic pause');
+                    } else {
+                        self.reset('video did not stay paused at the magic pause start time');
+                    }
                 }, self.keystrokeTimeoutDuration);
             },
 
             onActivate: function() {
                 // This mode has just been activated. Return to the initial state.
-                this.reset();
+                this.reset('magic pause mode activated');
 
                 // TODO: Hook these values up to user preferences
                 this.keystrokeTimeoutDuration = 1000;
@@ -228,7 +248,7 @@
                 this.resumeRewindAmount = 3000;
             },
             onDeactivate: function() {
-                this.reset();
+                this.reset('magic pause mode deactivated');
             },
             onTextEditKeystroke: function() {
                 switch(this.state) {

@@ -74,6 +74,11 @@ var angular = angular || null;
             }
         };
 
+        function seekAndResumeCallback() {
+            pop.play();
+            pop.off(this);
+        }
+
         // Public methods
         return {
             init: function() {
@@ -101,6 +106,14 @@ var angular = angular || null;
                     time = this.duration();
                 }
                 pop.currentTime(time / 1000);
+            },
+            seekAndPlay: function(time) {
+                if(time < 0) {
+                    time = 0;
+                } else if (time > this.duration()) {
+                    time = this.duration();
+                }
+                pop.currentTime(time / 1000).play();
             },
             togglePlay: function() {
                 if (pop.paused()) {

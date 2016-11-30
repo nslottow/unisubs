@@ -152,7 +152,7 @@ describe('when up and down sync subtitles', function() {
     }));
 });
 
-describe('when the enter key creates a new subtitle', function() {
+describe('when the enter key is pressed', function() {
     var keyCodeForEnter = 13;
     var subtitleList;
     var $scope;
@@ -182,18 +182,68 @@ describe('when the enter key creates a new subtitle', function() {
         spyOn(subtitleList, 'insertSubtitleBefore').and.callThrough();
     }));
 
-    it('creates a new subtitle when the timeline is hidden',
-            inject(function(MockEvents) {
-        $scope.currentEdit.start(subtitleList.subtitles[0]);
-        var evt = MockEvents.keydown(keyCodeForEnter);
-        $scope.onEditKeydown(evt);
-        expect(subtitleList.insertSubtitleBefore).toHaveBeenCalled();
-        expect(evt.preventDefault).toHaveBeenCalled();
+    describe('and the timeline is hidden', function() {
+        it('creates a new subtitle',
+                inject(function(MockEvents) {
+            $scope.currentEdit.start(subtitleList.subtitles[0]);
+            var evt = MockEvents.keydown(keyCodeForEnter);
+            $scope.onEditKeydown(evt);
+            expect(subtitleList.insertSubtitleBefore).toHaveBeenCalled();
+            expect(evt.preventDefault).toHaveBeenCalled();
 
-        $scope.timelineShown = true;
-        $scope.onEditKeydown(MockEvents.keydown(keyCodeForEnter));
-        expect(subtitleList.insertSubtitleBefore.calls.count()).toBe(1);
-    }));
+            $scope.timelineShown = true;
+            $scope.onEditKeydown(MockEvents.keydown(keyCodeForEnter));
+            expect(subtitleList.insertSubtitleBefore.calls.count()).toBe(1);
+        }));
+
+        // TODO: it('does not edit the subtitle at the current time')
+    });
+
+    describe('and the timeline is visible', function() {
+        beforeEach(function() {
+            $scope.timelineShown = true;
+
+            // insert a couple sync'd subtitles
+            subtitleList.loadXML(
+'<tt xmlns="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling" xml:lang="da">\
+    <head>\
+        <metadata xmlns:ttm="http://www.w3.org/ns/ttml#metadata">\
+            <ttm:title/>\
+            <ttm:description/>\
+            <ttm:copyright/>\
+        </metadata>\
+        <styling>\
+            <style xml:id="amara-style" tts:color="white" tts:fontFamily="proportionalSansSerif" tts:fontSize="18px" tts:backgroundColor="transparent" tts:textOutline="black 1px 0px" tts:textAlign="center"/>\
+        </styling>\
+        <layout>\
+            <region xml:id="bottom" style="amara-style" tts:extent="100% 20%" tts:origin="0 80%"/>\
+            <region xml:id="top" style="amara-style" tts:extent="100% 20%" tts:origin="0 0" tts:textAlign="center"/>\
+        </layout>\
+    </head>\
+    <body region="bottom">\
+        <div>\
+            <p begin="00:00:01.213" end="00:00:04.383">Hello</p>\
+            <p begin="00:00:04.383" end="00:00:08.613">world!</p>\
+        </div>\
+    </body>\
+</tt>');
+            $scope.currentEdit.start(subtitleList.subtitles[0]);
+        });
+
+        it('edits the subtitle at the current time',
+                inject(function(MockEvents, VideoPlayer) {
+            
+            var evt = MockEvents.keydown(keyCodeForEnter);
+            $scope.onEditKeydown(evt);
+        }));
+
+        it('does not edit a subtitle if there is no synced subtitle at the current time',
+                inject(function(MockEvents) {
+
+            var evt = MockEvents.keydown(keyCodeForEnter);
+            $scope.onEditKeydown(evt);
+        }));
+    });
 });
 
 describe('The WorkflowController', function() {
